@@ -30,3 +30,23 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Hatch binary
+hatch
+
+# SQLite database + WAL mode sidecars
+*.db
+*.db-wal
+*.db-shm
+
+# SSH host key (auto-generated on first run)
+host_key
+host_key.pub
+
+# Frontend
+web/node_modules/
+web/.yarn/cache/
+internal/api/static/dist/
+
+# Hatch runtime data
+.hatch/
