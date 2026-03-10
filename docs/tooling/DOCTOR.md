@@ -25,7 +25,7 @@ Doctor is a **local-first environment sanity check** designed to catch setup iss
 > *“Is my machine correctly set up to run this project?”*
 
 If the answer is **no**, it exits early with **clear, actionable instructions**
-(e.g. “install Java 21” or “run `colima start`”).
+(e.g. “install Go” or “run `colima start`”).
 
 This avoids confusing failures later in:
 

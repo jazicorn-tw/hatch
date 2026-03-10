@@ -8,10 +8,6 @@
     "status",
     "os",
     "git_branch",
-    "java_version_raw",
-    "java_major",
-    "gradlew_exists",
-    "gradlew_executable",
     "docker_cli",
     "docker_compose",
     "docker_daemon_reachable",
@@ -20,6 +16,8 @@
     "docker_cpus",
     "docker_memory_gb",
     "docker_socket_healthy",
+    "node_version_raw",
+    "node_major",
     "colima_present",
     "colima_running",
     "colima_memory_alloc",
@@ -32,12 +30,6 @@
     "os": { "type": "string" },
     "git_branch": { "type": "string" },
 
-    "java_version_raw": { "type": "string" },
-    "java_major": { "type": "string" },
-
-    "gradlew_exists": { "type": "integer", "enum": [0, 1] },
-    "gradlew_executable": { "type": "integer", "enum": [0, 1] },
-
     "docker_cli": { "type": "integer", "enum": [0, 1] },
     "docker_compose": { "type": "integer", "enum": [0, 1] },
     "docker_daemon_reachable": { "type": "integer", "enum": [0, 1] },
@@ -47,6 +39,9 @@
     "docker_cpus": { "type": "string" },
     "docker_memory_gb": { "type": "string" },
     "docker_socket_healthy": { "type": "integer", "enum": [0, 1] },
+
+    "node_version_raw": { "type": "string" },
+    "node_major": { "type": "string" },
 
     "colima_present": { "type": "integer", "enum": [0, 1] },
     "colima_running": { "type": "integer", "enum": [0, 1] },

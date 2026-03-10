@@ -2,16 +2,16 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-05
 updated_by:   jazicorn-tw
-updated_date: 2026-03-09
+updated_date: 2026-03-10
 status:       active
 tags:         [devops]
-description:  "`/ping` vs `/health` (Actuator) — What’s the Difference?"
+description:  "`/ping` vs `/health` — What's the Difference?"
 -->
 <!-- markdownlint-disable-file MD024 -->
-# `/ping` vs `/health` (Actuator) — What’s the Difference?
+# `/ping` vs `/health` — What's the Difference?
 
 This document explains **why `/ping` and `/health` both exist**, what problem each one solves,
-and how they should be wired in a **Spring Boot 4** application.
+and how they are wired in this Go application.
 
 ---
 
@@ -19,12 +19,12 @@ and how they should be wired in a **Spring Boot 4** application.
 
 | Endpoint  | Purpose                 | Dependencies              | Intended audience              |
 | --------- | ----------------------- | ------------------------- | ------------------------------ |
-| `/ping`   | “Is the process alive?” | **None**                  | Load balancers, CI smoke tests |
-| `/health` | “Is the app healthy?”   | **Many** (DB, disk, etc.) | Ops, monitoring, SRE           |
+| `/ping`   | "Is the process alive?" | **None**                  | Load balancers, CI smoke tests |
+| `/health` | "Is the app healthy?"   | **Many** (DB, disk, etc.) | Ops, monitoring, SRE           |
 
 Think of it as:
 
-> **`/ping` = liveness**  
+> **`/ping` = liveness**
 > **`/health` = readiness + health**
 
 They solve **different problems** and are **not interchangeable**.
@@ -36,8 +36,7 @@ They solve **different problems** and are **not interchangeable**.
 ### What `/ping` does
 
 - Confirms the **application process is running**
-- Confirms **Spring routing works**
-- Confirms the **context loaded**
+- Confirms **HTTP routing works**
 - Makes **no external calls**
 - Never touches DB, cache, or APIs
 
@@ -45,19 +44,19 @@ They solve **different problems** and are **not interchangeable**.
 
 ```http
 GET /ping
-````
+```
 
 ```json
 {
   "status": "ok",
-  "service": "{{app-name}}-api"
+  "service": "hatch-api"
 }
 ```
 
 ### When `/ping` should return `200`
 
-- The JVM is running
-- Spring Boot started successfully
+- The process is running
+- The HTTP server started successfully
 
 ### When `/ping` should fail
 
@@ -75,45 +74,56 @@ GET /ping
 
 - Load balancer health checks
 - CI smoke tests
-- Cloudflare uptime checks
 - Kubernetes **liveness probes**
+
+### Go implementation
+
+```go
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{
+        "status":  "ok",
+        "service": "hatch-api",
+    })
+}
+```
+
+**Rules enforced here:**
+
+- No DB calls
+- No injected dependencies
+- No external calls
 
 ---
 
-## `/health` — Actuator health & readiness
+## `/health` — Readiness & health
 
 ### What `/health` does
 
-- Aggregates **HealthIndicators**
-- Reports the status of:
-
-  - Database connectivity
+- Aggregates checks for:
+  - Database connectivity (SQLite)
   - Disk space
-  - Flyway migrations
-  - Custom checks
-  - (Optionally) external APIs
+  - Custom readiness conditions
 
 ### Example
 
 ```http
-GET /actuator/health
+GET /health
 ```
 
 ```json
 {
-  "status": "UP",
-  "components": {
-    "db": { "status": "UP" },
-    "diskSpace": { "status": "UP" },
-    "ping": { "status": "UP" }
+  "status": "ok",
+  "checks": {
+    "db": "ok",
+    "disk": "ok"
   }
 }
 ```
 
-### When `/health` should return `DOWN`
+### When `/health` should return non-200
 
 - Database is unreachable
-- Migrations failed
 - Disk is full
 - A critical dependency is unavailable
 
@@ -138,14 +148,14 @@ GET /actuator/health
 ### `/ping`
 
 - Implemented by **your code**
-- Simple controller
+- Simple handler
 - Zero dependencies
 - Always safe to call
 
 ### `/health`
 
-- Provided by **Spring Boot Actuator**
-- Pluggable health indicators
+- Implemented by **your code**
+- Checks real infrastructure
 - Infrastructure-dependent
 - Reflects system readiness
 
@@ -167,88 +177,12 @@ Using only one leads to **false positives** or **false negatives**.
 
 ---
 
-## Recommended wiring (Spring Boot 4)
-
-### `/ping` controller (liveness)
-
-```java
-@RestController
-public class PingController {
-
-  @GetMapping("${PING_PATH:/ping}")
-  public Map<String, String> ping() {
-    return Map.of(
-        "status", "ok",
-        "service", System.getenv().getOrDefault("SERVICE_NAME", "{{app-name}}-api")
-    );
-  }
-}
-```
-
-**Rules enforced here:**
-
-- No DB calls
-- No injected repositories
-- No external dependencies
-
----
-
-### Actuator configuration
-
-#### Dependency
-
-```gradle
-implementation 'org.springframework.boot:spring-boot-starter-actuator'
-```
-
-#### Exposure
-
-```properties
-management.endpoints.web.exposure.include=health,info
-```
-
-This exposes:
-
-- `/actuator/health`
-- `/actuator/info`
-
----
-
-### Optional: liveness & readiness probes
-
-```properties
-management.endpoint.health.probes.enabled=true
-management.health.livenessState.enabled=true
-management.health.readinessState.enabled=true
-```
-
-Endpoints:
-
-- `/actuator/health/liveness`
-- `/actuator/health/readiness`
-
----
-
 ## What NOT to do
 
-❌ Don’t use `/health` as a liveness probe
-❌ Don’t make `/ping` check the database
-❌ Don’t expose all Actuator endpoints publicly
-❌ Don’t return `500` from `/ping` because DB is down
-
----
-
-## Cloudflare / Pages note
-
-Cloudflare Pages and edge platforms:
-
-- Expect **simple, fast health checks**
-- Do not understand Actuator semantics
-
-**Best practice:**
-
-- Use `/ping` for Cloudflare health checks
-- Use `/actuator/health` internally or behind auth
+❌ Don't use `/health` as a liveness probe
+❌ Don't make `/ping` check the database
+❌ Don't expose `/health` publicly without auth in production
+❌ Don't return `500` from `/ping` because DB is down
 
 ---
 
@@ -266,5 +200,5 @@ Cloudflare Pages and edge platforms:
 
 ## Final rule of thumb
 
-> If it’s about **“is the process alive?” → `/ping`**
-> If it’s about **“can the system safely operate?” → `/health`**
+> If it's about **"is the process alive?" → `/ping`**
+> If it's about **"can the system safely operate?" → `/health`**

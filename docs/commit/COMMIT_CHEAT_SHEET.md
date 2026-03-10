@@ -23,7 +23,7 @@ Examples:
 - `chore(ci): tighten release artifact guard`
 - `refactor(service): extract trade validation`
 - `test(api): add trade rule coverage`
-- `build(gradle): pin spotless version`
+- `build(deps): update go dependencies`
 
 ---
 
@@ -120,7 +120,7 @@ Body example:
 feat(trades): add accept endpoint
 
 Includes validation for ownership and availability.
-Adds integration tests using Testcontainers.
+Adds integration tests using testify.
 ```
 
 ---
@@ -159,7 +159,7 @@ make verify
 
 - Run `cz commit` instead of `git commit`
 - Fix the message to match the schema
-- If formatting tools changed files (Spotless), re-stage and re-commit:
+- If `gofmt` changed files, re-stage and re-commit:
 
   ```bash
   git add -A

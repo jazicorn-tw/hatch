@@ -197,7 +197,7 @@ Use this when:
 ### Shell conditionals: runtime checks
 
 ```makefile
- @if [ -d ".gradle-act" ]; then rm -rf .gradle-act; fi
+ @if [ -d “$(GOCACHE)” ]; then go clean -cache; fi
 ```
 
 Use this when:
@@ -207,31 +207,31 @@ Use this when:
 
 ---
 
-## 7) Example: the act Gradle cache cleaner
+## 7) Example: the Go build cache cleaner
 
-You created a macro roughly like this (simplified):
+A macro roughly like this (simplified):
 
 ```makefile
-ACT_GRADLE_CACHE_WARN_GB ?= 8
-ACT_GRADLE_CACHE_REMOVE ?= false
+GO_CACHE_WARN_GB ?= 4
+GO_CACHE_REMOVE ?= false
 
-define clean-act-gradle-cache
+define clean-go-cache
  @# compute size, warn if > threshold
- @# delete only if ACT_GRADLE_CACHE_REMOVE=true|auto
+ @# delete only if GO_CACHE_REMOVE=true|auto
 endef
 
-clean-act:
- $(call clean-act-gradle-cache)
+clean-cache:
+ $(call clean-go-cache)
 ```
 
 What happens when you run:
 
 ```bash
-make clean-act
+make clean-cache
 ```
 
 1) Make chooses the final values (defaults apply).
-2) Make expands `$(call clean-act-gradle-cache)` into actual recipe lines.
+2) Make expands `$(call clean-go-cache)` into actual recipe lines.
 3) The shell executes those lines.
 4) The warning prints **because the shell code ran `du` and compared sizes**.
 

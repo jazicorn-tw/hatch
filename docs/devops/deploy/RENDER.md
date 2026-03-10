@@ -35,29 +35,24 @@ You can later switch to pulling a pinned GHCR image tag (release-aligned) if des
 
 At minimum, set:
 
-- `SPRING_PROFILES_ACTIVE=prod`
+- `ENV=production`
 
-Database (Render Postgres or external):
-
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-
-Security (example):
+Security:
 
 - `JWT_SECRET` (or your app’s secret name)
 
 ## Health check
 
-If you use Spring Boot Actuator probes, use one of:
+Use the `/health` endpoint:
 
-- `/actuator/health`
-- `/actuator/health/readiness` (preferred once enabled)
+- `/health` — readiness check (database, disk)
+- `/ping` — liveness check (process alive, no dependencies)
+
+Render recommends `/health` for the service health check URL.
 
 ## Notes
 
 - Keep all runtime config in environment variables (12-factor)
-- Flyway migrations should run on startup (idempotent, safe)
 - Prefer pinning images to a release tag for production stability (later enhancement)
 
 ## Future enhancement (release-aligned deploy)

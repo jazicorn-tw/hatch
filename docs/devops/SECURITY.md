@@ -2,22 +2,21 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-05
 updated_by:   jazicorn-tw
-updated_date: 2026-03-09
+updated_date: 2026-03-10
 status:       active
 tags:         [devops]
 description:  "Security Model"
 -->
 # Security Model
 
-This project uses **explicit, testable Spring Security configuration**.
+This project uses **explicit Go HTTP middleware** for authentication and authorization.
 
 ---
 
 ## Public endpoints
 
 - `GET /ping`
-- `GET /actuator/health`
-- `GET /actuator/info`
+- `GET /health`
 
 ---
 
@@ -30,9 +29,9 @@ This project uses **explicit, testable Spring Security configuration**.
 
 ## Implementation
 
-Security is enforced via `SecurityConfig.java`.
+Security is enforced via HTTP middleware applied to the router.
 
-No dispatcher-type or implicit exceptions are used.
+No implicit or framework-inferred security rules are used — all rules are explicit and testable.
 
 ---
 
@@ -40,4 +39,4 @@ No dispatcher-type or implicit exceptions are used.
 
 - JWT authentication
 - Role-based authorization
-- Restricted actuator endpoints in production
+- Restricted health endpoint details in production
