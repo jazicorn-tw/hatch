@@ -24,12 +24,27 @@ profile.cov
 go.work
 go.work.sum
 
+# macOS
+**.DS_Store**
+**/.DS_Store
+.home
+
 # env file
-.env
+**.env**
+**.env.**
+!.env.example
+.vars
+**/.vars
+.secrets
+**/.secrets
+**private-key.pem**
+**/private-key.pem**
+**.tmp_key.**
+**/.tmp_key.**
 
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
 
 # Hatch binary
 hatch
@@ -43,10 +58,20 @@ hatch
 host_key
 host_key.pub
 
+# Yarn (root)
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.cjs
+.pnp.loader.mjs
+
 # Frontend
 web/node_modules/
-web/.yarn/cache/
 internal/api/static/dist/
 
 # Hatch runtime data
 .hatch/
+
+# Local config
+.config/

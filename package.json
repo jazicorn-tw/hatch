@@ -1,0 +1,9 @@
+{
+  "packageManager": "yarn@4.13.0",
+  "scripts": {
+    "lint:md": "markdownlint-cli2 '**/*.md' '#node_modules'"
+  },
+  "devDependencies": {
+    "markdownlint": "^0.40.0"
+  }
+}
