@@ -4,5 +4,8 @@
       "strict": 2,
       "autoStage": true
     }
+  },
+  "doctor": {
+    "requireColimaRunning": false
   }
 }

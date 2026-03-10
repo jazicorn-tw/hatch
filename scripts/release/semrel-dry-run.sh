@@ -7,7 +7,7 @@ set -euo pipefail
 #   ./scripts/release/semrel-dry-run.sh
 #
 # Notes:
-# - Requires node_modules installed (npm i)
+# - Requires node_modules installed (yarn install)
 # - Does NOT create tags or GitHub Releases
 # - Prints what semantic-release *would* do, including next version
 

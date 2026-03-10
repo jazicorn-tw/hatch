@@ -30,6 +30,11 @@
       "name": ""
     }
   },
+  "doctor": {
+    "minDockerMemGb": 4,
+    "minDockerCpus": 2,
+    "requireColimaRunning": false
+  },
   "colima": {
     "profile": "default",
     "required": { "memGib": 8, "cpu": 6 },
