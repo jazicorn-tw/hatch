@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# pre-push — warn if no baseline tag exists before pushing to a release branch.
+#
+# Without a baseline tag (e.g. v0.0.0), semantic-release will version the first
+# release as v1.0.0 instead of starting from v0.x.x.
+#
+# Bypass for one push:  SKIP_BASELINE_TAG_CHECK=1 git push
+# See:                  docs/devops/RELEASE_POLICY.md
+
+# ── Skip conditions ────────────────────────────────────────────────────────────
+if [[ "${CI:-}" == "true" ]]; then exit 0; fi
+if [[ "${SKIP_BASELINE_TAG_CHECK:-0}" == "1" ]]; then exit 0; fi
+
+# ── Only check pushes to release branches ─────────────────────────────────────
+pushing_to_release_branch=false
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "${remote_ref:-}" in
+    refs/heads/main|refs/heads/canary)
+      pushing_to_release_branch=true
+      break
+      ;;
+  esac
+done
+
+if [[ "$pushing_to_release_branch" != "true" ]]; then
+  exit 0
+fi
+
+# ── Check remote for tags (best-effort) ───────────────────────────────────────
+# If the remote is unreachable, skip the check rather than blocking the push.
+if ls_output="$(git ls-remote --tags origin 2>/dev/null)"; then
+  if printf '%s\n' "$ls_output" | grep -q 'refs/tags/'; then
+    exit 0  # tags exist — nothing to warn about
+  fi
+else
+  exit 0  # remote unreachable — don't block
+fi
+
+# ── Resolve the initial commit SHA for the suggested command ──────────────────
+initial_sha="$(git rev-list --max-parents=0 HEAD 2>/dev/null || true)"
+
+# ── Styled warning (requires TTY) ─────────────────────────────────────────────
+if [[ -r /dev/tty && -w /dev/tty ]]; then
+  exec </dev/tty >/dev/tty 2>&1
+
+  if test -t 1; then
+    ESC=$'\033'
+    RESET="${ESC}[0m"
+    BOLD="${ESC}[1m"
+    DIM="${ESC}[2m"
+    YELLOW="${ESC}[1;33m"
+    CYAN="${ESC}[1;36m"
+    GREEN="${ESC}[1;32m"
+    RED="${ESC}[1;31m"
+  else
+    RESET="" BOLD="" DIM="" YELLOW="" CYAN="" GREEN="" RED=""
+  fi
+
+  cat <<EOF
+
+${YELLOW}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}
+${YELLOW}${BOLD}⚠️  No baseline tag found${RESET}
+
+  This repository has no tags. Without a baseline tag, semantic-release
+  will version the first release as ${BOLD}v1.0.0${RESET} instead of starting from
+  ${BOLD}v0.x.x${RESET}.
+
+  ${BOLD}To create a v0.0.0 baseline and push it:${RESET}
+
+    ${CYAN}git tag v0.0.0 ${initial_sha:-<initial-commit-sha>}${RESET}
+    ${CYAN}git push origin v0.0.0${RESET}
+
+  Then re-run your push.
+
+  ${DIM}Docs:   docs/devops/RELEASE.md${RESET}
+  ${DIM}Bypass: SKIP_BASELINE_TAG_CHECK=1 git push${RESET}
+${YELLOW}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}
+
+EOF
+
+  read -r -p "Proceed without a baseline tag? [y/N] " answer
+  answer="$(printf '%s' "${answer}" | tr '[:upper:]' '[:lower:]')"
+
+  if [[ "$answer" == "y" || "$answer" == "yes" ]]; then
+    echo
+    echo "${GREEN}${BOLD}Proceeding…${RESET}"
+    exit 0
+  fi
+
+  echo
+  echo "${RED}${BOLD}🛑 Push aborted. Create the baseline tag first, then push again.${RESET}"
+  exit 1
+fi
+
+# ── No TTY: warn but don't block ──────────────────────────────────────────────
+echo "⚠️  pre-push: no baseline tag found — semantic-release may version as v1.0.0."
+echo "   See docs/devops/RELEASE_POLICY.md or set SKIP_BASELINE_TAG_CHECK=1 to suppress."
+exit 0

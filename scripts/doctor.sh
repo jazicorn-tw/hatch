@@ -358,7 +358,12 @@ fi
 # ----------------------------
 # Docker daemon
 # ----------------------------
-if ! docker info >/dev/null 2>&1; then
+INFO=""
+if docker info >/dev/null 2>&1; then
+  DOCKER_DAEMON=1
+  ok "docker daemon reachable"
+  INFO="$(docker info 2>/dev/null || true)"
+else
   DOCKER_DAEMON=0
   if [[ "${HAS_COLIMA}" == "1" && "${COLIMA_RUNNING}" == "0" ]]; then
     warn "Docker daemon not reachable (Colima is not running — not required for Go dev)"
@@ -368,10 +373,6 @@ if ! docker info >/dev/null 2>&1; then
     die "Docker daemon not reachable. Start Docker Desktop or the Docker service."
   fi
 fi
-DOCKER_DAEMON=1
-ok "docker daemon reachable"
-
-INFO="$(docker info 2>/dev/null || true)"
 
 # Provider detection — context-first, docker info only for ambiguous cases.
 #

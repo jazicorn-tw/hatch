@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Enforce Conventional Commits via Commitizen (cz), then (optionally) warn/prompt
+# if the commit message would trigger semantic-release.
+#
+# Git passes the commit message file path as $1.
+#
+# IMPORTANT:
+# This file must contain ONLY hook logic.
+# Installer/setup commands belong in scripts/, not in this hook.
+
+# Guard against accidentally committing installer commands into the hook.
+# Ignore comment lines; only fail on actual command lines.
+if grep -vE '^[[:space:]]*#' "$0" | grep -qE '^[[:space:]]*(mkdir -p[[:space:]]+\.githooks|cat[[:space:]]+>[[:space:]]+\.githooks/commit-msg|chmod[[:space:]]+\+x[[:space:]]+\.githooks/commit-msg)'; then
+  echo "commit-msg: hook file contains installer commands; it must contain only hook logic." >&2
+  exit 1
+fi
+
+if [[ -z "${1:-}" ]]; then
+  echo "commit-msg: missing commit message file argument" >&2
+  exit 1
+fi
+
+# One-off bypass (use sparingly)
+if [[ "${SKIP_COMMIT_MSG_CHECK:-}" == "1" ]]; then
+  echo "commit-msg: SKIP_COMMIT_MSG_CHECK=1 set; skipping commit message validation + release confirmation."
+  exit 0
+fi
+
+# ---------------------------------------------------------------------
+# 1) Commitizen validation (optional — skipped gracefully if cz absent)
+# ---------------------------------------------------------------------
+if ! command -v cz >/dev/null 2>&1; then
+  echo "commit-msg: ⚠️  'cz' not found — skipping format validation (install: pipx install commitizen)"
+else
+  cz check --commit-msg-file "$1"
+fi
+
+# ---------------------------------------------------------------------
+# 1.5) Scope validation against .config/tags.yml
+# ---------------------------------------------------------------------
+#
+# Scopes are optional. When present, the scope must be in the canonical
+# vocabulary defined in .config/tags.yml — the same list used for docs
+# frontmatter tag validation.
+#
+# The (release) scope is handled separately below (section 1.6).
+#
+# Bypass (rare, intentional):
+#   SKIP_SCOPE_CHECK=1 git commit ...
+# ---------------------------------------------------------------------
+
+_commit_header="$(head -n 1 "$1" | tr -d '\r')"
+_commit_scope=""
+_scope_re='^[a-zA-Z0-9]+\(([^)]+)\):'
+if [[ "$_commit_header" =~ $_scope_re ]]; then
+  _commit_scope="${BASH_REMATCH[1]}"
+fi
+
+if [[ -n "$_commit_scope" && "$_commit_scope" != "release" && "${SKIP_SCOPE_CHECK:-0}" != "1" ]]; then
+  _repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  _tags_file="${_repo_root}/.config/tags.yml"
+  if [[ -f "$_tags_file" ]]; then
+    _valid_scopes=()
+    while IFS= read -r _scope_line; do
+      _valid_scopes+=("$_scope_line")
+    done < <(awk '/^tags:/{p=1;next} /^[[:alpha:]]/{p=0} p && /^  - /{sub(/^  - /,""); print}' "$_tags_file")
+
+    _scope_valid=0
+    for _s in "${_valid_scopes[@]}"; do
+      [[ "$_commit_scope" == "$_s" ]] && { _scope_valid=1; break; }
+    done
+
+    if [[ $_scope_valid -eq 0 ]]; then
+      printf '\ncommit-msg: ❌ scope validation failed\n' >&2
+      printf '\n  Invalid scope: (%s)\n\n' "$_commit_scope" >&2
+      printf '  Allowed scopes (.config/tags.yml):\n\n' >&2
+      printf '    ' >&2; printf '%s  ' "${_valid_scopes[@]}" >&2; printf '\n\n' >&2
+      printf '  Or omit the scope:  type: description\n\n' >&2
+      exit 1
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------
+# 1.6) Guard: reserve (release) scope for automation only
+# ---------------------------------------------------------------------
+#
+# Rationale:
+# - Humans should never manually create release-scoped commits
+# - semantic-release uses `chore(release): x.y.z [skip ci]`
+# - CI automation must be allowed
+#
+# Escape hatch (rare, intentional):
+#   ALLOW_RELEASE_SCOPE=1 git commit ...
+# ---------------------------------------------------------------------
+
+header="$(head -n 1 "$1" | tr -d '\r')"
+
+if [[ "${header}" =~ ^[a-zA-Z0-9]+\(release\): ]]; then
+  # Always allow CI automation
+  if [[ "${CI:-}" == "true" ]]; then
+    :
+  # Explicit local override (discouraged, but intentional)
+  elif [[ "${ALLOW_RELEASE_SCOPE:-0}" == "1" ]]; then
+    :
+  else
+    cat >&2 <<'EOF'
+
+❌ Invalid commit scope: (release)
+
+The (release) scope is **reserved for CI automation only**.
+
+This repository treats releases as an operational concern handled by
+semantic-release and GitHub Actions.
+
+✅ Use one of these instead:
+
+  • CI / wiring changes:
+      chore(ci): <description>
+
+  • Release documentation or intent:
+      docs: <description>
+
+  • General changes:
+      refactor: <description>
+      chore: <description>
+
+If you intend to publish a release, do so via the release workflow —
+not a manual commit message.
+
+EOF
+    exit 1
+  fi
+fi
+
+
+# ---------------------------------------------------------------------
+# 2) Release-trigger confirmation (synced to semantic-release if available)
+# ---------------------------------------------------------------------
+# Opt-out for one commit:
+#   CONFIRM_RELEASE_COMMIT=0 git commit -m "feat: ..."
+#
+# Non-interactive behavior (if you really need it):
+#   RELEASE_CONFIRM_NONINTERACTIVE=allow git commit -m "feat: ..."
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -n "${repo_root}" ]]; then
+  confirm_script="${repo_root}/scripts/git/confirm-release-commit.sh"
+  if [[ -x "${confirm_script}" ]]; then
+    "${confirm_script}" "$1"
+  fi
+fi
