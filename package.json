@@ -4,6 +4,16 @@
     "lint:md": "markdownlint-cli2 '**/*.md' '#node_modules'"
   },
   "devDependencies": {
-    "markdownlint": "^0.40.0"
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/release-notes-generator": "^12.1.0",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
+    "cosmiconfig": "^9.0.0",
+    "markdownlint": "^0.40.0",
+    "markdownlint-cli2": "^0.21.0",
+    "semantic-release": "^22.0.12"
   }
 }
