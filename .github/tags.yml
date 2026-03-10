@@ -1,0 +1,39 @@
+# Unified taxonomy — one canonical list for docs frontmatter tags and
+# conventional commit scopes.
+#
+# Every value here serves double duty:
+#   1. Valid tag in docs/ frontmatter  (tags: [ci, tooling, ...])
+#   2. Valid scope in commit messages  (feat(ci): ..., fix(tooling): ...)
+#
+# Enforced by:
+#   - pre-add hook      → docs/ frontmatter tags
+#   - commit-msg hook   → conventional commit scopes
+
+tags:
+  - adr
+  - act
+  - api
+  - build
+  - ci
+  - commit
+  - config
+  - db
+  - deps
+  - deploy
+  - devops
+  - dx
+  - env
+  - errors
+  - faq
+  - local
+  - make
+  - onboarding
+  - phases
+  - planning
+  - qa
+  - reports
+  - runtime
+  - services
+  - spring
+  - test
+  - tooling

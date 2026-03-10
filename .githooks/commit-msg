@@ -38,11 +38,11 @@ else
 fi
 
 # ---------------------------------------------------------------------
-# 1.5) Scope validation against .config/tags.yml
+# 1.5) Scope validation against .github/tags.yml
 # ---------------------------------------------------------------------
 #
 # Scopes are optional. When present, the scope must be in the canonical
-# vocabulary defined in .config/tags.yml — the same list used for docs
+# vocabulary defined in .github/tags.yml — the same list used for docs
 # frontmatter tag validation.
 #
 # The (release) scope is handled separately below (section 1.6).
@@ -60,7 +60,7 @@ fi
 
 if [[ -n "$_commit_scope" && "$_commit_scope" != "release" && "${SKIP_SCOPE_CHECK:-0}" != "1" ]]; then
   _repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-  _tags_file="${_repo_root}/.config/tags.yml"
+  _tags_file="${_repo_root}/.github/tags.yml"
   if [[ -f "$_tags_file" ]]; then
     _valid_scopes=()
     while IFS= read -r _scope_line; do
@@ -75,7 +75,7 @@ if [[ -n "$_commit_scope" && "$_commit_scope" != "release" && "${SKIP_SCOPE_CHEC
     if [[ $_scope_valid -eq 0 ]]; then
       printf '\ncommit-msg: ❌ scope validation failed\n' >&2
       printf '\n  Invalid scope: (%s)\n\n' "$_commit_scope" >&2
-      printf '  Allowed scopes (.config/tags.yml):\n\n' >&2
+      printf '  Allowed scopes (.github/tags.yml):\n\n' >&2
       printf '    ' >&2; printf '%s  ' "${_valid_scopes[@]}" >&2; printf '\n\n' >&2
       printf '  Or omit the scope:  type: description\n\n' >&2
       exit 1
