@@ -1,0 +1,315 @@
+name: Release
+
+# Handles the CI and release pipeline:
+#   docker-build  — build check on PRs (no push); skipped on workflow_run
+#   helm-lint     — Helm chart validation on PRs; skipped on workflow_run
+#   release       — semantic-release on main/canary, gated on CI workflow success
+#
+# The release job is triggered via workflow_run after the CI workflow completes
+# successfully on main or canary. It will not run if any CI job fails.
+#
+# Docker + Helm publishing lives in publish.yml (triggered by tag push).
+
+on:
+  pull_request:
+    branches: [ main, staging, canary ]
+  push:
+    tags: [ 'v*.*.*' ]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [ main, canary ]
+  workflow_dispatch:
+    inputs:
+      enable_release:
+        description: "Run semantic-release for this run (overrides repo variable gate)"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+# No workflow-level permissions — declared per job to grant least privilege.
+
+concurrency:
+  group: release-${{ github.ref }}
+  # Cancel in-progress runs on PRs and feature branches; never cancel on
+  # main, canary, or tag pushes where releases / publishes must complete.
+  cancel-in-progress: >-
+    ${{
+      github.ref != 'refs/heads/main' &&
+      github.ref != 'refs/heads/canary' &&
+      !startsWith(github.ref, 'refs/tags/')
+    }}
+
+jobs:
+  # ── Docker build check (CI only, no push) ────────────────────────────────────
+  docker-build:
+    name: Docker build (no push)
+    runs-on: ubuntu-latest
+
+    # Skip on tag pushes and workflow_run events — build is validated by CI or the branch push.
+    if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_run' }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (CI only, no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          platforms: linux/amd64
+          tags: ${{ github.repository }}:ci
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── Helm lint ─────────────────────────────────────────────────────────────────
+  helm-lint:
+    name: Helm lint (CI only)
+    runs-on: ubuntu-latest
+
+    # Skip on tag pushes and workflow_run events — validated by CI or the branch push.
+    if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_run' }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Helm lint
+        run: helm lint helm/app
+
+  # ── Semantic release ──────────────────────────────────────────────────────────
+  release:
+    needs: [docker-build, helm-lint]
+    # Run only after CI passes on main/canary (workflow_run) or on manual dispatch.
+    # docker-build and helm-lint are skipped on workflow_run, so their results
+    # will be 'skipped' — the needs-result checks allow that.
+    # Gate releases behind ENABLE_SEMANTIC_RELEASE=true (repo variable) or
+    # enable_release=true (manual input).
+    if: >-
+      always() &&
+      (needs.docker-build.result == 'success' || needs.docker-build.result == 'skipped') &&
+      (needs.helm-lint.result == 'success' || needs.helm-lint.result == 'skipped') &&
+      (inputs.enable_release == 'true' || vars.ENABLE_SEMANTIC_RELEASE == 'true') &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'canary')))
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      packages: write
+
+    outputs:
+      published_version: ${{ steps.semrel-publish.outputs.published_version }}
+      preview_next_version: ${{ steps.semrel-preview.outputs.next_version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Disable git hooks for release automation
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/empty-git-hooks
+          git config core.hooksPath /tmp/empty-git-hooks
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ fromJSON(format('"{0}"', secrets.GH_APP_PRIVATE_KEY)) }}
+
+      - name: Force HTTPS git remote
+        run: |
+          set -euo pipefail
+
+          # Ensure the token never shows up in logs
+          echo "::add-mask::${GH_TOKEN}"
+
+          # Remove the GITHUB_TOKEN credential header injected by actions/checkout.
+          # Without this, git sends both the extraheader (GITHUB_TOKEN) and the
+          # URL-embedded App token — GitHub uses GITHUB_TOKEN, and tag pushes made
+          # with GITHUB_TOKEN never trigger downstream workflows (publish.yml).
+          git config --unset-all "http.https://github.com/.extraheader" || true
+
+          # Make origin use HTTPS (semantic-release calls git under the hood)
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          # Also rewrite any ssh-style GitHub URLs that tools might use
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Release gate summary
+        run: |
+          set -euo pipefail
+          echo "::group::🚦 Release gate evaluation"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚦 Release gate evaluation"
+          echo ""
+          echo "Event:              ${{ github.event_name }}"
+          echo "Branch:             ${{ github.ref_name }}"
+          echo "Manual input:       ${{ inputs.enable_release || 'n/a' }}"
+          echo "Repo gate var:      ${{ vars.ENABLE_SEMANTIC_RELEASE || 'unset' }}"
+          echo "Docker publish var: ${{ vars.PUBLISH_DOCKER_IMAGE || 'unset' }}"
+          echo "Helm publish var:   ${{ vars.PUBLISH_HELM_CHART || 'unset' }}"
+          echo "Canonical repo:     ${{ vars.CANONICAL_REPOSITORY || 'unset' }}"
+          echo "This repo:          ${{ github.repository }}"
+          echo ""
+          echo "Gate result: ALLOWED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "::endgroup::"
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install semantic-release deps
+        run: yarn install --immutable
+
+      - name: Preview next release version (dry-run)
+        id: semrel-preview
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          echo "::group::🔎 semantic-release dry-run (preview)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔎 semantic-release dry-run (preview)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          npx semantic-release --dry-run --no-ci | tee semantic-release-dryrun.log
+
+          # Best-effort extraction of the computed next version (format varies by plugins).
+          next_version="$(
+            grep -Eo 'next release version is [0-9]+\.[0-9]+\.[0-9]+' semantic-release-dryrun.log \
+              | tail -n 1 \
+              | awk '{print $NF}' \
+              || true
+          )"
+
+          if [ -n "$next_version" ]; then
+            echo ""
+            echo "✅ Next version (if published): $next_version"
+            echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
+          else
+            echo ""
+            echo "ℹ️ No next version detected (likely: no releasable commits)."
+          fi
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "::endgroup::"
+
+      - name: Run semantic-release (publish)
+        id: semrel-publish
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          echo "::group::🚀 semantic-release publish"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 semantic-release publish"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          npx semantic-release | tee semantic-release.log
+          echo "::endgroup::"
+
+          # Best-effort extraction of the published version.
+          published_version="$(
+            grep -Eo 'Published release [0-9]+\.[0-9]+\.[0-9]+' semantic-release.log \
+              | tail -n 1 \
+              | awk '{print $NF}' \
+              || true
+          )"
+
+          if [ -n "$published_version" ]; then
+            echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post-release summary (what happened)
+        if: always()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 Release outcome"
+          echo ""
+
+          if [ "${{ steps.semrel-publish.outputs.published_version }}" != "" ]; then
+            echo "✅ Published: ${{ steps.semrel-publish.outputs.published_version }}"
+          elif [ "${{ steps.semrel-preview.outputs.next_version }}" != "" ]; then
+            echo "ℹ️ No publish detected. Preview suggested: ${{ steps.semrel-preview.outputs.next_version }}"
+            echo "   (Common cause: semantic-release found no releasable commits or publish step exited early.)"
+          else
+            echo "ℹ️ No release published (likely: no releasable commits)."
+          fi
+
+          echo ""
+          echo "Where to look:"
+          echo "  - semantic-release.log        (publish run)"
+          echo "  - semantic-release-dryrun.log (preview run)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Write release summary (job summary)
+        if: always()
+        run: |
+          {
+            echo "# 🚀 Release Summary"
+            echo ""
+            echo "## Trigger"
+            echo "- Event: **${{ github.event_name }}**"
+            echo "- Branch: **${{ github.ref_name }}**"
+            echo ""
+            echo "## Gates"
+            echo "- ENABLE_SEMANTIC_RELEASE: **${{ vars.ENABLE_SEMANTIC_RELEASE || 'unset' }}**"
+            echo "- Manual enable_release: **${{ inputs.enable_release || 'n/a' }}**"
+            echo "- PUBLISH_DOCKER_IMAGE: **${{ vars.PUBLISH_DOCKER_IMAGE || 'unset' }}**"
+            echo "- PUBLISH_HELM_CHART: **${{ vars.PUBLISH_HELM_CHART || 'unset' }}**"
+            echo ""
+            if [ "${{ steps.semrel-publish.outputs.published_version }}" != "" ]; then
+              echo "## Outcome"
+              echo "✅ Published version **${{ steps.semrel-publish.outputs.published_version }}**"
+            elif [ "${{ steps.semrel-preview.outputs.next_version }}" != "" ]; then
+              echo "## Outcome"
+              echo "ℹ️ No release published"
+              echo ""
+              echo "Preview suggested version: **${{ steps.semrel-preview.outputs.next_version }}**"
+            else
+              echo "## Outcome"
+              echo "ℹ️ No releasable commits detected"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
