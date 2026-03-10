@@ -1,0 +1,41 @@
+{
+  "checks": {
+    "executableBits": { 
+      "strict": 2, 
+      "autoStage": true 
+    },
+    "lineEndings": { 
+      "enforce": true 
+    },
+    "filePermissions": { 
+      "warnOnGroupWrite": true 
+    }
+  },
+  "git": {
+    "autoInstallHooks": true,
+    "releaseConfirm": {
+      "strictDefault": false
+    },
+    "preAddLint": {
+      "enabled": true,
+      "spotless": true
+    }
+  },
+  "local": {
+    "host": "localhost",
+    "app": { "port": 8080 },
+    "db": {
+      "host": "localhost",
+      "port": 5432,
+      "name": ""
+    }
+  },
+  "colima": {
+    "profile": "default",
+    "required": { "memGib": 8, "cpu": 6 },
+    "tolerance": { "gib": 0.25 }
+  },
+  "docker": {
+    "postgres": { "image": "postgres:16-alpine" }
+  }
+}

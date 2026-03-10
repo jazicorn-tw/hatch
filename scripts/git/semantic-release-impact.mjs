@@ -12,10 +12,10 @@
  *   rule_detail=<short human text>
  *
  * Requirements (devDependencies):
- *   npm i -D semantic-release @semantic-release/commit-analyzer
+ *   yarn add -D semantic-release @semantic-release/commit-analyzer
  *
  * Optional (better config loading):
- *   npm i -D cosmiconfig
+ *   yarn add -D cosmiconfig
  */
 
 import fs from "node:fs";
