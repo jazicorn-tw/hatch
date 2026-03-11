@@ -1,14 +1,14 @@
 {
   "checks": {
-    "executableBits": { 
-      "strict": 2, 
-      "autoStage": true 
+    "executableBits": {
+      "strict": 2,
+      "autoStage": true
     },
-    "lineEndings": { 
-      "enforce": true 
+    "lineEndings": {
+      "enforce": true
     },
-    "filePermissions": { 
-      "warnOnGroupWrite": true 
+    "filePermissions": {
+      "warnOnGroupWrite": true
     }
   },
   "git": {
@@ -17,18 +17,12 @@
       "strictDefault": false
     },
     "preAddLint": {
-      "enabled": true,
-      "spotless": true
+      "enabled": true
     }
   },
   "local": {
     "host": "localhost",
-    "app": { "port": 8080 },
-    "db": {
-      "host": "localhost",
-      "port": 5432,
-      "name": ""
-    }
+    "app": { "port": 8080 }
   },
   "doctor": {
     "minDockerMemGb": 4,
@@ -39,8 +33,5 @@
     "profile": "default",
     "required": { "memGib": 8, "cpu": 6 },
     "tolerance": { "gib": 0.25 }
-  },
-  "docker": {
-    "postgres": { "image": "postgres:16-alpine" }
   }
 }

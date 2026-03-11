@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pre-commit hook aligned with ADR-000 (Quality Gates)
+# Goal: fast, consistent feedback before code leaves your machine.
+#
+# Runs on ALL branches:
+#   1. make format  (auto-format Go source)
+#   2. make lint    (go vet + staticcheck)
+#   3. make test    (go test ./...)
+#
+# Overrides (one-off per commit):
+#   SKIP_QUALITY=1  git commit ...   -> skip this hook entirely
+#   AUTO_FORMAT=0   git commit ...   -> skip auto-format (lint + test still run)
+#   SKIP_TESTS=1    git commit ...   -> skip tests (format + lint still run)
+#   DEBUG_PRECOMMIT=1 git commit ... -> print debug info
+
+log()   { printf '%s\n' "$*"; }
+debug() {
+  if [[ "${DEBUG_PRECOMMIT:-}" == "1" ]]; then
+    printf '%s\n' "pre-commit(debug): $*"
+  fi
+}
+
+if [[ "${SKIP_QUALITY:-}" == "1" ]]; then
+  log "pre-commit: SKIP_QUALITY=1 set; skipping quality gate."
+  exit 0
+fi
+
+# Ensure we're at repo root even if invoked from subdir
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Only run if relevant files are staged
+CHANGED="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+
+debug "staged files:"
+debug "${CHANGED:-<none>}"
+
+should_run=false
+triggered_by=""
+
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+
+  case "$f" in
+    *.go|go.mod|go.sum|*.sh|Makefile|make/*.mk|.github/workflows/*)
+      should_run=true
+      triggered_by="$f"
+      break
+      ;;
+  esac
+
+done <<< "$CHANGED"
+
+if [[ "$should_run" != "true" ]]; then
+  log "pre-commit: no relevant files staged; skipping quality gate."
+  exit 0
+fi
+
+debug "triggered by: $triggered_by"
+
+# --- Format ---
+if [[ "${AUTO_FORMAT:-1}" != "0" ]]; then
+  log "pre-commit: formatting (make format)..."
+  make format
+else
+  log "pre-commit: AUTO_FORMAT=0 set; skipping format."
+fi
+
+# --- Lint ---
+log "pre-commit: linting (make lint)..."
+make lint
+
+# --- Test ---
+if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
+  log "pre-commit: testing (make test)..."
+  make test
+else
+  log "pre-commit: SKIP_TESTS=1 set; skipping tests."
+fi
