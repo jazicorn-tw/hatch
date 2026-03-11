@@ -20,7 +20,7 @@ stop_compose_if_present() {
   compose_file="$(find_compose_file || true)"
 
   if [[ -z "$compose_file" ]]; then
-    log "ℹ️  No compose file found. Skipping compose down."
+    log "no compose file found — skipping compose down"
     return 0
   fi
 
@@ -29,14 +29,14 @@ stop_compose_if_present() {
     return 0
   fi
 
-  log "▶ docker compose down (${compose_file})…"
+  log "docker compose down (${compose_file})…"
   docker compose -f "$compose_file" down
-  log "✅ docker compose stack is down"
+  log "docker compose stack is down"
 }
 
 stop_colima() {
   if [[ "${KEEP_COLIMA_RUNNING:-0}" == "1" ]]; then
-    log "ℹ️  KEEP_COLIMA_RUNNING=1 set. Skipping colima stop."
+    log "KEEP_COLIMA_RUNNING=1 — skipping colima stop"
     return 0
   fi
 
@@ -46,18 +46,20 @@ stop_colima() {
   fi
 
   if colima_running; then
-    log "▶ Stopping colima…"
+    log "stopping colima…"
     colima stop
-    log "✅ colima stopped"
+    log "colima stopped"
   else
-    log "✅ colima already stopped"
+    log "colima already stopped"
   fi
 }
 
 main() {
-  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  log "🛑 Local dev stop"
-  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  if [[ -n "$_GUM" ]]; then
+    $_GUM style --bold --border normal --padding "0 1" "🛑 Local dev stop"
+  else
+    printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🛑 Local dev stop\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
+  fi
 
   stop_compose_if_present
   stop_colima

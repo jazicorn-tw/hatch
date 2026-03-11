@@ -24,16 +24,16 @@ ensure_colima_running() {
   fi
 
   if colima_running; then
-    log "✅ colima already running"
+    log "colima already running"
     return 0
   fi
 
-  log "▶ Starting colima…"
+  log "starting colima…"
   # Allow caller to pass COLIMA_START_ARGS="--cpu 4 --memory 6"
   local args="${COLIMA_START_ARGS:-}"
   # shellcheck disable=SC2086
   colima start ${args}
-  log "✅ colima started"
+  log "colima started"
 }
 
 ensure_docker_context_colima() {
@@ -51,13 +51,13 @@ ensure_docker_context_colima() {
   current="$(docker context show 2>/dev/null || true)"
 
   if [[ "$current" == "colima" ]]; then
-    log "✅ docker context already 'colima'"
+    log "docker context already 'colima'"
     return 0
   fi
 
-  log "▶ Switching docker context to 'colima'…"
+  log "switching docker context to 'colima'…"
   docker context use colima >/dev/null
-  log "✅ docker context is now 'colima'"
+  log "docker context is now 'colima'"
 }
 
 start_compose_if_present() {
@@ -66,7 +66,7 @@ start_compose_if_present() {
   compose_file="$(find_compose_file || true)"
 
   if [[ -z "$compose_file" ]]; then
-    log "ℹ️  No compose file found (docker-compose.yml/compose.yml). Skipping compose up."
+    log "no compose file found — skipping compose up"
     return 0
   fi
 
@@ -75,25 +75,24 @@ start_compose_if_present() {
   fi
 
   # Optional: set COMPOSE_PROFILES=dev to activate dev-only services.
-  log "▶ docker compose up -d (${compose_file})…"
+  log "docker compose up -d (${compose_file})…"
   docker compose -f "$compose_file" up -d
-  log "✅ docker compose stack is up"
+  log "docker compose stack is up"
 }
 
 main() {
-  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  log "🚀 Local dev start"
-  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  if [[ -n "$_GUM" ]]; then
+    $_GUM style --bold --border normal --padding "0 1" "🚀 Local dev start"
+  else
+    printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🚀 Local dev start\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
+  fi
 
   ensure_colima_running
   ensure_docker_context_colima
   start_compose_if_present
 
-  log ""
   log "🎉 Local dev prerequisites are ready."
-  log "Next steps:"
-  log "  - make doctor"
-  log "  - make run  # start the server"
+  log "Next steps: ./dev doctor  •  ./dev run"
 }
 
 main "$@"

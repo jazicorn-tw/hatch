@@ -27,6 +27,9 @@ set -euo pipefail
 #   docker up              start Docker Compose services
 #   docker down            stop Docker Compose services
 #   docker reset           reset Docker Compose (down -v + up)
+#   test-ci                run all CI workflows locally via act (requires act + Docker)
+#   test-ci <workflow>     run a specific workflow (e.g. test-ci ci, test-ci release)
+#   changelog              preview semantic-release changelog (dry-run, no release)
 #   clean local            clean local build artifacts
 #   clean docker           clean Docker build cache
 #   clean colima           reset Colima (destructive)
@@ -137,6 +140,8 @@ if [[ -z "$TASK" ]]; then
     "docker up" \
     "docker down" \
     "docker reset" \
+    "test-ci" \
+    "changelog" \
     "clean local" \
     "clean docker" \
     "clean colima")
@@ -265,6 +270,31 @@ case "$TASK" in
   # ── Env ─────────────────────────────────────────────────────────────────────
   env:up)
     header "env up"
+    # Detect a stale Colima state that would cause a disk-lock failure on start.
+    # This happens when a previous VM crashed without a clean shutdown:
+    #   1. Orphaned colima/limactl processes still holding the disk
+    #   2. A stale Lima in_use_by symlink that was never cleaned up
+    _stale_pids=$(pgrep -d ' ' -x 'colima' 2>/dev/null || true)
+    _stale_pids+=" $(pgrep -d ' ' -x 'limactl' 2>/dev/null || true)"
+    _stale_pids="${_stale_pids// /}"   # collapse spaces
+    _disk_lock="${HOME}/.colima/_lima/_disks/colima/in_use_by"
+    _stale=false
+    [[ -n "$_stale_pids" ]] && _stale=true
+    [[ -L "$_disk_lock" ]]  && _stale=true
+    if [[ "$_stale" == true ]] && ! colima status >/dev/null 2>&1; then
+      [[ -n "$_stale_pids" ]] && \
+        $GUM log --level warn "stale processes: ${_stale_pids// /,}"
+      [[ -L "$_disk_lock" ]] && \
+        $GUM log --level warn "stale disk lock: ${_disk_lock}"
+      if $GUM confirm "Clean up stale Colima state and continue?"; then
+        [[ -n "$_stale_pids" ]] && { kill ${_stale_pids} 2>/dev/null || true; sleep 1; }
+        [[ -L "$_disk_lock" ]] && rm -f "$_disk_lock"
+        $GUM log --level info "stale state cleared"
+      else
+        $GUM log --level error "aborting — stale state left in place"
+        exit 1
+      fi
+    fi
     ./scripts/dev/start-dev.sh
     ;;
 
@@ -303,6 +333,85 @@ case "$TASK" in
     $GUM confirm "Reset Docker Compose? This will delete volumes." || exit 0
     spin "Resetting Docker Compose..." bash -c "docker compose down -v && docker compose up -d"
     log_done "docker reset"
+    ;;
+
+  # ── Test CI ─────────────────────────────────────────────────────────────────
+  test-ci|test-ci:*)
+    header "test-ci"
+    if ! command -v act >/dev/null 2>&1; then
+      log_error "act is required: brew install act"
+      exit 1
+    fi
+    # Strip prefix: "test-ci:ci" → "ci", bare "test-ci" → "test-ci" (sentinel)
+    _tc_workflow="${TASK#test-ci:}"
+    # Optional job override via env: ACT_JOB=test ./dev test-ci ci
+    _tc_job="${ACT_JOB:-}"
+
+    # ── Resolve Docker socket ──────────────────────────────────────────────────
+    # act bind-mounts the socket into runner containers. Must be at a path the
+    # host daemon can resolve — /var/run/docker.sock works; Colima's socket path
+    # inside ~/.colima does not (macOS can't bind-mount VM-internal paths).
+    _std_sock="/var/run/docker.sock"
+    _colima_sock="${HOME}/.colima/default/docker.sock"
+    if [[ -n "${DOCKER_HOST:-}" ]]; then
+      _tc_docker_sock="$DOCKER_HOST"
+    elif [[ -S "$_std_sock" ]]; then
+      _tc_docker_sock="unix://${_std_sock}"
+    elif [[ -S "$_colima_sock" ]]; then
+      $GUM log --level warn "/var/run/docker.sock not found — act cannot mount the Colima socket into containers"
+      $GUM log --level warn "Fix: sudo ln -sf ${_colima_sock} ${_std_sock}"
+      if $GUM confirm "Create symlink now? (requires sudo)"; then
+        sudo ln -sf "$_colima_sock" "$_std_sock"
+        $GUM log --level info "symlink created: ${_std_sock} → ${_colima_sock}"
+        _tc_docker_sock="unix://${_std_sock}"
+      else
+        $GUM log --level warn "continuing without socket mount — Docker-in-Docker steps will fail"
+        _tc_docker_sock=""
+      fi
+    else
+      _tc_docker_sock=""
+    fi
+    [[ -n "$_tc_docker_sock" ]] && $GUM log --level info "docker socket: ${_tc_docker_sock}"
+
+    # ── Build base act args ────────────────────────────────────────────────────
+    _tc_base_args=(
+      --env ACT=true
+      --container-architecture linux/amd64
+      --container-options "--privileged"
+    )
+    [[ -n "$_tc_job" ]] && _tc_base_args+=(-j "$_tc_job")
+    [[ -f .env ]]       && _tc_base_args+=(--secret-file .env)
+    [[ -f .vars ]]      && _tc_base_args+=(--var-file .vars)
+
+    # ── Run workflows ──────────────────────────────────────────────────────────
+    if [[ "$_tc_workflow" == "test-ci" ]]; then
+      # No argument — run local-safe workflows only.
+      # release.yml and publish.yml require Docker-in-Docker (DinD) which does
+      # not work on macOS + Colima. Push a branch to test those on GitHub.
+      _tc_local=(ci doctor changelog-guard)
+      $GUM log --level info "local workflows: ${_tc_local[*]}${_tc_job:+  job: ${_tc_job}}"
+      for _wf in "${_tc_local[@]}"; do
+        $GUM log --level info "── ${_wf}"
+        DOCKER_HOST="${_tc_docker_sock:-}" act "${_tc_base_args[@]}" -W ".github/workflows/${_wf}.yml"
+      done
+    else
+      # Specific workflow: ./dev test-ci release → release.yml
+      $GUM log --level info "workflow: ${_tc_workflow}${_tc_job:+  job: ${_tc_job}}"
+      DOCKER_HOST="${_tc_docker_sock:-}" act "${_tc_base_args[@]}" -W ".github/workflows/${_tc_workflow}.yml"
+    fi
+    log_done "test-ci"
+    ;;
+
+  # ── Changelog ────────────────────────────────────────────────────────────────
+  changelog)
+    header "changelog"
+    if [[ ! -f node_modules/.bin/semantic-release ]]; then
+      log_error "semantic-release not installed — run: yarn install"
+      exit 1
+    fi
+    $GUM log --level info "dry-run — no release will be created"
+    npx semantic-release --dry-run --no-ci
+    log_done "changelog"
     ;;
 
   # ── Clean ───────────────────────────────────────────────────────────────────
