@@ -25,13 +25,21 @@ pre-commit: ## 🪝 Smart pre-commit gate (strict on main)
 format: ## ✨ Auto-format sources (gofmt)
 	$(call group_start,format)
 	$(call step,✨ gofmt)
-	@gofmt -w ./...
+	@if [ -n "$$(find . -name '*.go' -not -path './vendor/*' 2>/dev/null | head -1)" ]; then \
+	  gofmt -w ./...; \
+	else \
+	  printf "%b\n" "$(YELLOW)⚠ no Go files found, skipping gofmt$(RESET)"; \
+	fi
 	$(call group_end)
 
 lint: lint-docs ## 🔎 Static analysis + markdown lint
 	$(call group_start,lint)
 	$(call step,🔎 go vet)
-	@go vet ./...
+	@if [ -n "$$(find . -name '*.go' -not -path './vendor/*' 2>/dev/null | head -1)" ]; then \
+	  go vet ./...; \
+	else \
+	  printf "%b\n" "$(YELLOW)⚠ no Go files found, skipping go vet$(RESET)"; \
+	fi
 	$(call group_end)
 
 lint-docs: ## 📝 Lint all markdown files (markdownlint-cli2)
@@ -43,7 +51,11 @@ lint-docs: ## 📝 Lint all markdown files (markdownlint-cli2)
 test: ## 🧪 Unit tests
 	$(call group_start,test)
 	$(call step,🧪 Unit tests)
-	@go test ./...
+	@if [ -n "$$(find . -name '*.go' -not -path './vendor/*' 2>/dev/null | head -1)" ]; then \
+	  go test ./...; \
+	else \
+	  printf "%b\n" "$(YELLOW)⚠ no Go files found, skipping go test$(RESET)"; \
+	fi
 	$(call group_end)
 
 verify: doctor lint test ## ✅ Doctor + lint + test
