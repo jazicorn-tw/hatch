@@ -60,12 +60,28 @@ log_warn()  { $GUM log --level warn  "$*"; }
 log_error() { $GUM log --level error "$*"; }
 log_done()  { $GUM log --level info  "$* ✓"; }
 
-# Use spinner in interactive TTY; run directly (with visible output) otherwise.
-# This ensures errors are always visible in non-TTY contexts like git hooks.
+# Show a spinner while a command runs; print captured output only on failure.
+# TTY: run command in background, spin on its PID, print output if it fails.
+# Non-TTY (CI / git hooks): run directly so output flows through.
 spin() {
   local title="$1"; shift
   if [[ -t 1 ]]; then
-    $GUM spin --spinner dot --title "$title" -- "$@"
+    local _out _rc=0
+    _out=$(mktemp)
+    # Start the real command in background, capturing all output
+    "$@" >"$_out" 2>&1 &
+    local _pid=$!
+    # Show spinner while the background job is alive
+    $GUM spin --spinner dot --title "$title" -- \
+      bash -c "while kill -0 ${_pid} 2>/dev/null; do sleep 0.05; done" || true
+    # Collect the exit code
+    wait "$_pid" || _rc=$?
+    # Only print output on failure
+    if [[ $_rc -ne 0 ]]; then
+      cat "$_out" >&2
+    fi
+    rm -f "$_out"
+    return $_rc
   else
     "$@"
   fi

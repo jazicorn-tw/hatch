@@ -221,6 +221,8 @@ if [[ ${#md_files[@]} -gt 0 ]]; then
 
   for _f in "${md_files[@]}"; do
     [[ ${#_ALLOWED_TAGS[@]} -eq 0 ]] && break   # no tags file — skip validation
+    # Skip template files — they contain placeholder tags by design
+    [[ "$_f" == *_TEMPLATE.md ]] && continue
     _fp="$REPO_ROOT/$_f"
     [[ -f "$_fp" ]] || _fp="$_f"
 
