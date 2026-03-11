@@ -90,7 +90,15 @@ else
   GIT_PREFIX="$(git rev-parse --show-prefix 2>/dev/null || true)"
   for arg in "${args[@]:-}"; do
     [[ "${arg:-}" == -* ]] && continue
-    collect_file "${GIT_PREFIX}${arg}"
+    p="${GIT_PREFIX}${arg}"
+    if [[ -d "$REPO_ROOT/$p" || -d "$p" ]]; then
+      # Directory argument: enumerate changed files within it (same as all_mode)
+      while IFS= read -r f; do
+        collect_file "$f"
+      done < <(git -C "$REPO_ROOT" ls-files --modified --others --exclude-standard -- "$p" || true)
+    else
+      collect_file "$p"
+    fi
   done
 fi
 
@@ -102,24 +110,46 @@ failed=0
 fail_count=0
 cd "$REPO_ROOT"
 
+# ── Gum availability (for output only — optional, falls back to printf) ───────
+_GUM=""
+if command -v gum >/dev/null 2>&1; then
+  _GUM="gum"
+else
+  _gopath_gum="$(go env GOPATH 2>/dev/null)/bin/gum"
+  [[ -x "$_gopath_gum" ]] && _GUM="$_gopath_gum"
+fi
+
 # ── Output helpers ────────────────────────────────────────────────────────────
-_RULE='  ────────────────────────────────────────────────────'
-_rule()   { printf '%s\n' "$_RULE"; }
-_step()   { printf '\n  %s\n' "$*"; }
-_pass()   { printf '  ✅  %s\n' "$*"; }
-_fail()   { printf '\n  ❌  %s\n' "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
-_skip()   { printf '  ⏭   %s\n' "$*"; }
-_indent() { sed 's/^/    /'; }   # nest command output under its _step header
+if [[ -n "$_GUM" ]]; then
+  _rule()   { :; }
+  _step()   { $_GUM style --foreground 240 "$*"; }
+  _pass()   { $_GUM log --level info  "$*"; }
+  _fail()   { $_GUM log --level error "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
+  _skip()   { $_GUM log --level warn  "$*"; }
+  _indent() { cat; }
+else
+  _RULE='  ────────────────────────────────────────────────────'
+  _rule()   { printf '%s\n' "$_RULE"; }
+  _step()   { printf '\n  %s\n' "$*"; }
+  _pass()   { printf '  ✅  %s\n' "$*"; }
+  _fail()   { printf '\n  ❌  %s\n' "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
+  _skip()   { printf '  ⏭   %s\n' "$*"; }
+  _indent() { sed 's/^/    /'; }
+fi
 
 # ── Header ────────────────────────────────────────────────────────────────────
 _label="pre-add"
 [[ ${#md_files[@]} -gt 0 ]]     && _label+="  ·  ${#md_files[@]} md"
 [[ ${#script_files[@]} -gt 0 ]] && _label+="  ·  ${#script_files[@]} script"
 
-printf '\n'
-_rule
-printf '  %s\n' "$_label"
-_rule
+if [[ -n "$_GUM" ]]; then
+  $_GUM style --foreground 99 --bold "▶ $_label"
+else
+  printf '\n'
+  _rule
+  printf '  %s\n' "$_label"
+  _rule
+fi
 
 # ── Frontmatter auto-patch ────────────────────────────────────────────────────
 # Injects or refreshes HTML-comment frontmatter in staged .md files.
@@ -260,16 +290,26 @@ if [[ ${#script_files[@]} -gt 0 ]]; then
 fi
 
 # ── Footer ────────────────────────────────────────────────────────────────────
-printf '\n'
-_rule
-if [[ $failed -eq 0 ]]; then
-  printf '  ✅  all checks passed\n'
-elif [[ $fail_count -eq 1 ]]; then
-  printf '  ❌  1 check failed — see errors above, then re-run git add\n'
+if [[ -n "$_GUM" ]]; then
+  if [[ $failed -eq 0 ]]; then
+    $_GUM log --level info "all checks passed ✓"
+  elif [[ $fail_count -eq 1 ]]; then
+    $_GUM log --level error "1 check failed — see errors above, then re-run git add"
+  else
+    $_GUM log --level error "${fail_count} checks failed — see errors above, then re-run git add"
+  fi
 else
-  printf '  ❌  %d checks failed — see errors above, then re-run git add\n' "$fail_count"
+  printf '\n'
+  _rule
+  if [[ $failed -eq 0 ]]; then
+    printf '  ✅  all checks passed\n'
+  elif [[ $fail_count -eq 1 ]]; then
+    printf '  ❌  1 check failed — see errors above, then re-run git add\n'
+  else
+    printf '  ❌  %d checks failed — see errors above, then re-run git add\n' "$fail_count"
+  fi
+  _rule
+  printf '\n'
 fi
-_rule
-printf '\n'
 
 exit $failed

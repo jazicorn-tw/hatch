@@ -20,13 +20,14 @@ tags:
   - db
   - deps
   - deploy
+  - dev
   - devops
   - dx
   - env
   - errors
   - faq
+  - hooks
   - local
-  - make
   - onboarding
   - phases
   - planning
@@ -37,3 +38,4 @@ tags:
   - spring
   - test
   - tooling
+  - ux
