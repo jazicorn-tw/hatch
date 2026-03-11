@@ -1,6 +1,6 @@
 <!--
 created_by:   jazicorn-tw
-created_date: 2026-03-09
+created_date: 2026-03-10
 updated_by:   jazicorn-tw
 updated_date: 2026-03-11
 status:       active
@@ -36,6 +36,7 @@ All branches run the same three steps:
 | `./dev lint`       | `go vet` + markdown lint                  |
 | `./dev test`       | `go test ./...`                           |
 | `./dev quality`    | doctor + format + lint + test (CI parity) |
+| `./dev exec-bits`  | Check + fix executable bits on scripts    |
 
 ---
 
@@ -51,6 +52,7 @@ Or target a specific step:
 ./dev format     # gofmt only
 ./dev lint       # go vet + markdownlint
 ./dev test       # go test ./...
+./dev exec-bits  # check + fix executable bits on scripts
 ./dev quality    # doctor + format + lint + test (matches CI)
 ```
 

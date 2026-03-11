@@ -1,8 +1,8 @@
 <!--
 created_by:   jazicorn-tw
-created_date: 2026-03-09
+created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-09
+updated_date: 2026-03-11
 status:       active
 tags:         [commit]
 description:  "Conventional Commits Cheat Sheet (1 page)"
@@ -97,7 +97,8 @@ BREAKING CHANGE: describe what changed and why
 
 ## 🧠 Scopes (optional but helpful)
 
-Good scopes: `api`, `service`, `domain`, `db`, `security`, `ci`, `docs`, `build`
+Valid scopes are defined in [`.github/tags.yml`](../../.github/tags.yml).
+Examples: `api`, `db`, `security`, `ci`, `build`, `deploy`, `hooks`
 
 Example:
 
