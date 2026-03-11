@@ -53,7 +53,7 @@ Only if you want to test container builds or run the full local environment (`./
 
 ## Commits
 
-**My commit was rejected by the hook**
+### My commit was rejected by the hook
 
 The `commit-msg` hook enforces [Conventional Commits](https://www.conventionalcommits.org/). Use:
 
@@ -71,7 +71,7 @@ See [`docs/commit/COMMIT_CHEAT_SHEET.md`](../commit/COMMIT_CHEAT_SHEET.md).
 
 ---
 
-**My scope was rejected as invalid**
+### My scope was rejected as invalid
 
 Scopes must be in the list defined in [`.github/tags.yml`](../../.github/tags.yml). Either use a valid scope or omit the scope entirely:
 
@@ -92,7 +92,7 @@ git commit -m "your message"
 
 ---
 
-**I need to skip a hook in an emergency**
+### I need to skip a hook in an emergency
 
 ```bash
 SKIP_COMMIT_MSG_CHECK=1 git commit -m "..."   # skip commit-msg validation

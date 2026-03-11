@@ -1,3 +1,12 @@
+<!--
+created_by:   jazicorn-tw
+created_date: 2026-03-11
+updated_by:   jazicorn-tw
+updated_date: 2026-03-11
+status:       active
+tags:         [planning]
+description:  "Hatch development roadmap — versioned milestones"
+-->
 # Hatch — Roadmap
 
 ---
@@ -8,7 +17,10 @@ Single binary, local ingestion, full TUI quiz loop
 
 ### Milestone 1 — Foundation
 
-- [ ] Init repo: `go mod init`, `Makefile`, `.gitignore`
+- [x] Init repo: `go mod init`, `./dev` task runner, `.gitignore`
+- [x] CI: GitHub Actions workflows
+- [x] Git hooks: pre-commit, commit-msg, pre-add
+- [x] Doctor script: validate local dev environment
 - [ ] Scaffold all `cmd/hatch/` and `internal/` packages
 - [ ] Config layer: Viper + `~/.hatch/config.yaml`, env var overrides, `hatch config init`
 - [ ] Core interfaces: `Source`, `Chunker`, `Embedder`, `LLM`, `Store`, `Agent`
@@ -85,7 +97,7 @@ Juniors SSH in from anywhere; seniors look up scores via CLI
 
 - [ ] TUI: "Search" screen — `huh.NewInput` query → `Store.Search(TopK=10)` → Glamour-rendered results with source citations
 - [ ] TUI: "Browse" screen — list indexed sources; select source to page through chunk summaries via `bubbles/viewport`
-- [ ] TUI: wire Knowledge Base entry point into Welcome screen `huh.NewSelect` (alongside Start Quiz / Configure Sources / Progress / Quit)
+- [ ] TUI: wire Knowledge Base entry point into Welcome screen `huh.NewSelect`
 - [ ] CLI: `hatch search <query>` — headless semantic search; prints ranked chunks with similarity scores
 - [ ] CLI: `hatch search --source=<name> <query>` — scoped to a single source
 - [ ] FTS5 keyword fallback: full-text search when no embedding provider is configured
@@ -112,11 +124,10 @@ Seniors access leaderboard, progress, and session replays in a browser
 - [ ] Source Breakdown page: per-source accuracy; highlight sources with avg < 60%
 - [ ] Session Drill-down page: full Q&A replay with user's choice highlighted
 - [ ] Vite outputs to `internal/api/static/dist/`; embedded in Go binary via `//go:embed`
-- [ ] `make web` → `make build` dependency chain in Makefile
 
 ---
 
-## v4 — Expanded Sources (v1.5 features)
+## v4 — Expanded Sources
 
 More ingestion targets and smarter search
 
@@ -141,4 +152,4 @@ Three-tier orchestration, adaptive quizzing, curriculum mode
 - [ ] Multi-source questions: cross-reference content across sources in one question
 - [ ] Knowledge graph: entity graph over indexed codebase for richer retrieval
 - [ ] Curriculum mode: structured onboarding track vs. random drill
-- [ ] LLM-driven `Dispatch`: task DAG built dynamically per-request (no interface changes required)
+- [ ] LLM-driven `Dispatch`: task DAG built dynamically per-request
