@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Called by the shell-level git() wrapper (not a native Git hook).
 # .md files              → markdownlint-cli2 on staged files only (aborts on error)
-# scripts/ / .githooks/  → make exec-bits  (chmod +x + stage, auto-fixes in place)
+# scripts/ / .githooks/  → exec-bits check  (chmod +x + stage, auto-fixes in place)
 #
 # Configuration hierarchy (highest → lowest priority):
 #   1. SKIP_PRE_ADD_LINT=1 git add …        env var — skip this invocation
@@ -74,7 +74,7 @@ collect_file() {
   [[ -f "$REPO_ROOT/$f" || -f "$f" ]] || return 0
   case "$f" in
     *.md)                          md_files+=("$f") ;;
-    scripts/*|.githooks/*|*.sh|*.bash|*.mjs) script_files+=("$f") ;;
+    scripts/*|.githooks/*|*.sh|*.bash|*.mjs|dev) script_files+=("$f") ;;
   esac
 }
 
@@ -244,10 +244,10 @@ if [[ ${#md_files[@]} -gt 0 ]]; then
   fi
 fi
 
-# ── Executable bits (make exec-bits) ──────────────────────────────────────────
+# ── Executable bits ───────────────────────────────────────────────────────────
 # Auto-fixes chmod +x and stages the mode change (strict: 2, autoStage: true).
 if [[ ${#script_files[@]} -gt 0 ]]; then
-  _exec_out=$(make exec-bits 2>&1); _exec_rc=$?
+  _exec_out=$(./scripts/check/check-executable-bits.sh 2>&1); _exec_rc=$?
   if [[ $_exec_rc -eq 0 ]]; then
     _pass "exec-bits (${#script_files[@]} script file(s))"
   else

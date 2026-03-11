@@ -2,14 +2,14 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-09
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
 tags:         [commit]
 description:  "Pre-commit hook"
 -->
 # Pre-commit hook
 
-This repo uses a **`make pre-commit`** smart gate to enforce quality checks *before* code leaves your machine.
+This repo uses a **`./dev pre-commit`** gate to enforce quality checks *before* code leaves your machine.
 
 The goal is **fast, deterministic feedback** that prevents CI failures and catches common issues early.
 
@@ -17,40 +17,41 @@ The goal is **fast, deterministic feedback** that prevents CI failures and catch
 
 ## What runs on `git commit`
 
-The gate applies a **branch-aware strategy**:
+All branches run the same three steps:
 
-| Branch | What runs                      | Why                                    |
-| ------ | ------------------------------ | -------------------------------------- |
-| `main` | `make quality` (full gate)     | CI parity — doctor + go vet + go test  |
-| Other  | `make format lint test` (fast) | Faster feedback on feature branches    |
+| Step | Command        | What it does             |
+| ---- | -------------- | ------------------------ |
+| 1    | `./dev format` | Auto-format with `gofmt` |
+| 2    | `./dev lint`   | `go vet` + markdown lint |
+| 3    | `./dev test`   | `go test ./...`          |
 
 ---
 
-## Make targets
+## Dev tasks
 
-| Target            | Description                                   |
-| ----------------- | --------------------------------------------- |
-| `make pre-commit` | Smart gate — strict on main, fast on branches |
-| `make format`     | Auto-format with `gofmt`                      |
-| `make lint`       | `go vet` + markdown lint                      |
-| `make test`       | `go test ./...`                               |
-| `make quality`    | doctor + `go vet` + `go test` (CI parity)     |
+| Command            | Description                               |
+| ------------------ | ----------------------------------------- |
+| `./dev pre-commit` | Run the full pre-commit gate              |
+| `./dev format`     | Auto-format with `gofmt`                  |
+| `./dev lint`       | `go vet` + markdown lint                  |
+| `./dev test`       | `go test ./...`                           |
+| `./dev quality`    | doctor + format + lint + test (CI parity) |
 
 ---
 
 ## Run the same checks without committing
 
 ```bash
-make pre-commit
+./dev pre-commit
 ```
 
 Or target a specific step:
 
 ```bash
-make format     # gofmt only
-make lint       # go vet + markdownlint
-make test       # go test ./...
-make quality    # doctor + go vet + go test (matches CI)
+./dev format     # gofmt only
+./dev lint       # go vet + markdownlint
+./dev test       # go test ./...
+./dev quality    # doctor + format + lint + test (matches CI)
 ```
 
 ---
@@ -61,6 +62,18 @@ Skip the pre-commit gate once:
 
 ```bash
 SKIP_QUALITY=1 git commit -m "..."
+```
+
+Skip only auto-format:
+
+```bash
+AUTO_FORMAT=0 git commit -m "..."
+```
+
+Skip only tests:
+
+```bash
+SKIP_TESTS=1 git commit -m "..."
 ```
 
 Hard bypass (skips *all* Git hooks):
@@ -76,11 +89,11 @@ git commit --no-verify
 The pre-commit hook requires Git hooks to be configured:
 
 ```bash
-make hooks
+./dev hooks
 ```
 
 or during first-time setup:
 
 ```bash
-make bootstrap
+./dev bootstrap
 ```

@@ -1,8 +1,8 @@
 <!--
 created_by:   jazicorn-tw
-created_date: 2026-03-05
+created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-09
+updated_date: 2026-03-11
 status:       active
 tags:         [tooling]
 description:  "Bootstrap Scripts"
@@ -106,13 +106,13 @@ When run on a supported OS, bootstrap:
 ### Recommended (via Make)
 
 ```bash
-make hooks
+./dev hooks
 ```
 
 or during first-time setup:
 
 ```bash
-make bootstrap
+./dev bootstrap
 ```
 
 ### Direct invocation
@@ -173,7 +173,7 @@ or notice unexpected local diffs related to permissions or line endings.
 Bootstrap works together with:
 
 - `scripts/check/check-executable-bits.sh` — verifies executable bits (auto-fix locally, enforce in CI)
-- `make hooks` / `make bootstrap` — canonical entry points
+- `./dev hooks` / `./dev bootstrap` — canonical entry points
 - `.config.example/local-settings.json` — local-only behavior and settings reference
 - `ADR-000` — CI as source of truth
 - `ADR-007` — commit message enforcement strategy

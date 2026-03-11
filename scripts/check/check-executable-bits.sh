@@ -213,6 +213,7 @@ fi
 PATTERNS=(
   "scripts/"
   ".githooks/"
+  "dev"
 )
 
 missing=()

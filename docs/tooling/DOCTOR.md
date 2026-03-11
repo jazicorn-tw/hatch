@@ -1,8 +1,8 @@
 <!--
 created_by:   jazicorn-tw
-created_date: 2026-03-05
+created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-09
+updated_date: 2026-03-11
 status:       active
 tags:         [tooling]
 description:  "Doctor (Local Environment Sanity)"
@@ -20,7 +20,7 @@ Doctor is a **local-first environment sanity check** designed to catch setup iss
 
 ## What this is
 
-`make doctor` answers one question:
+`./dev doctor` answers one question:
 
 > *“Is my machine correctly set up to run this project?”*
 
@@ -46,7 +46,7 @@ scripts/doctor.sh
 The naming is intentional:
 
 - **Script:** `scripts/doctor.sh` — technical, explicit, reusable
-- **Command:** `make doctor` — human-friendly entry point
+- **Command:** `./dev doctor` — human-friendly entry point
 
 The script can also be run directly.
 
@@ -105,7 +105,7 @@ colima start --cpu 6 --memory 8
 ## How to run it
 
 ```bash
-make doctor
+./dev doctor
 ```
 
 Use Doctor:
@@ -113,7 +113,7 @@ Use Doctor:
 - After cloning
 - During onboarding
 - When something “feels wrong”
-- Before long-running checks (`make quality`)
+- Before long-running checks (`./dev quality`)
 
 ---
 
@@ -124,7 +124,7 @@ Doctor can be tuned **per invocation** via environment variables.
 ### `DOCTOR_STRICT`
 
 ```bash
-DOCTOR_STRICT=1 make doctor
+DOCTOR_STRICT=1 ./dev doctor
 ```
 
 Treats **warnings as failures**.
@@ -135,7 +135,7 @@ Useful when you want a fully clean environment.
 ### `DOCTOR_MIN_DOCKER_MEM_GB`
 
 ```bash
-DOCTOR_MIN_DOCKER_MEM_GB=6 make doctor
+DOCTOR_MIN_DOCKER_MEM_GB=6 ./dev doctor
 ```
 
 Sets the *recommended* Docker memory threshold (GiB).
@@ -152,7 +152,7 @@ Defaults (without env var) are read from `.config/local-settings.json`:
 ### `DOCTOR_MIN_DOCKER_CPUS`
 
 ```bash
-DOCTOR_MIN_DOCKER_CPUS=4 make doctor
+DOCTOR_MIN_DOCKER_CPUS=4 ./dev doctor
 ```
 
 Sets the *recommended* Docker CPU count.
@@ -163,7 +163,7 @@ Also falls back to `doctor.minDockerCpus` in `.config/local-settings.json`.
 ### `DOCTOR_REQUIRE_COLIMA_RUNNING` (macOS only)
 
 ```bash
-DOCTOR_REQUIRE_COLIMA_RUNNING=1 make doctor
+DOCTOR_REQUIRE_COLIMA_RUNNING=1 ./dev doctor
 ```
 
 Fails if Colima is installed but not running.
