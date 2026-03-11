@@ -18,6 +18,7 @@ jobs:
   quality:
     name: go vet + staticcheck
     runs-on: ubuntu-latest
+    if: ${{ vars.ENABLE_GO_ANALYSIS != 'false' }}
 
     env:
       CI: true
@@ -36,7 +37,6 @@ jobs:
         run: go vet ./...
 
       - name: staticcheck
-        if: ${{ vars.ENABLE_STATIC_ANALYSIS != 'false' }}
         uses: dominikh/staticcheck-action@v1
         with:
           version: latest
@@ -45,6 +45,7 @@ jobs:
   test:
     name: Build + test
     runs-on: ubuntu-latest
+    if: ${{ vars.ENABLE_GO_ANALYSIS != 'false' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
 
     needs:
       - quality
