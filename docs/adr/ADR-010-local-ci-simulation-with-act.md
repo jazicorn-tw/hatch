@@ -54,28 +54,38 @@ Local CI simulation is considered a **first-class developer workflow**, but **do
 
 ## Implementation
 
-### Makefile integration
+### `./dev` integration
 
 Local CI is invoked via:
 
 ```bash
-make run-ci [workflow] [job]
+./dev test-ci                  # run local-safe workflows: ci, doctor, changelog-guard
+./dev test-ci ci               # run a specific workflow
+./dev test-ci release          # run a specific workflow (may fail locally — see below)
+ACT_JOB=test ./dev test-ci ci # run a single job within a workflow
 ```
 
-Examples:
+The `./dev` wrapper ensures:
 
-```bash
-make run-ci                 # defaults to ci workflow
-make run-ci ci test         # run a single job
-make run-ci build-image     # run a different workflow
-make list-ci build-image   # list jobs
-```
+- `ACT=true` is exported so workflows can detect local simulation
+- `--container-architecture linux/amd64` is set for Apple Silicon compatibility
+- `--container-options "--privileged"` is set for tool cache and socket access
+- `.env` is passed as a secret file if present
+- `.vars` is passed as a var file if present
 
-The Make wrapper ensures:
+#### Local-safe vs. GitHub-only workflows
 
-- `ACT=true` is exported
-- The Docker daemon socket is mounted at `/var/run/docker.sock`
-- The runner container runs as root to avoid socket permission issues
+| Workflow              | Local (`act`) | Notes                                    |
+| --------------------- | ------------- | ---------------------------------------- |
+| `ci.yml`              | ✅            | Go tests, linting                        |
+| `doctor.yml`          | ✅            | Environment checks                       |
+| `changelog-guard.yml` | ✅            | Release artifact guard                   |
+| `release.yml`         | ⚠️            | Docker-in-Docker fails on macOS + Colima |
+| `publish.yml`         | ⚠️            | Requires registry credentials + DinD     |
+
+`release.yml` and `publish.yml` require Docker-in-Docker (DinD), which does not work
+reliably on macOS with the Colima VM backend. Test these by pushing a branch to GitHub
+and monitoring with `gh run watch`.
 
 ---
 
@@ -154,16 +164,14 @@ Rejected due to:
 
 ## Related Documents
 
-- `docs/devops/ci/act/ACT_OVERVIEW.md`
-- `docs/devops/ci/act/ACT_TROUBLESHOOTING.md`
-- `docs/devops/ci/act/ACT_COMMANDS.md`
-- `docs/MAKEFILE.md`
+- [`docs/devops/CI_VARIABLES.md`](../CI_VARIABLES.md) — GitHub repo variables reference
+- [`docs/tooling/DEV.md`](../../tooling/DEV.md) — `./dev` task runner reference
 
 ---
 
 ## Decision Summary
 
-We standardize on **`act` + Makefile wrappers** for local CI simulation.
+We standardize on **`act` + `./dev test-ci`** for local CI simulation.
 
 This approach balances realism, developer experience, and maintainability while keeping GitHub
 Actions as the source of truth.

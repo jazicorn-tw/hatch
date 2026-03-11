@@ -1,0 +1,123 @@
+<!--
+created_by:   jazicorn-tw
+created_date: 2026-03-11
+updated_by:   jazicorn-tw
+updated_date: 2026-03-11
+status:       active
+tags:         [devops, ci, config]
+description:  "GitHub Actions repository variables — what each controls and when to set it"
+-->
+# CI Variables
+
+GitHub Actions repository variables for this project. Set these in:
+**GitHub → Settings → Secrets and variables → Actions → Variables**
+
+---
+
+## Go analysis
+
+| Variable             | Type     | Default | Values          |
+| -------------------- | -------- | ------- | --------------- |
+| `ENABLE_GO_ANALYSIS` | Variable | enabled | `false` / unset |
+
+Gates both `go vet` and `staticcheck` in the `quality` job, and the `test` job
+(`go build` + `go test`).
+
+Set to `false` **before Go source exists** to prevent CI from failing with
+"matched no packages". Remove or set to `true` once `internal/` is scaffolded.
+
+---
+
+## Markdown lint
+
+| Variable          | Type     | Default | Values          |
+| ----------------- | -------- | ------- | --------------- |
+| `ENABLE_MD_LINT`  | Variable | enabled | `false` / unset |
+
+Gates the `markdown-lint` job. Disable temporarily if markdownlint is being
+configured or if bulk doc changes are in progress.
+
+---
+
+## Doctor snapshot
+
+| Variable                  | Type     | Default | Values          |
+| ------------------------- | -------- | ------- | --------------- |
+| `ENABLE_DOCTOR_SNAPSHOT`  | Variable | enabled | `false` / unset |
+
+Gates the `doctor` workflow entirely. Disabling skips environment health
+snapshot uploads. Rarely needed.
+
+---
+
+## Semantic release
+
+| Variable                  | Type     | Default  | Values           |
+| ------------------------- | -------- | -------- | ---------------- |
+| `ENABLE_SEMANTIC_RELEASE` | Variable | disabled | `true` / unset   |
+
+Must be explicitly set to `true` to allow `semantic-release` to cut a tag,
+update `CHANGELOG.md`, and create a GitHub Release. Leave unset (or `false`)
+during active development to prevent accidental releases.
+
+---
+
+## Publishing
+
+| Variable               | Type     | Default  | Values     |
+| ---------------------- | -------- | -------- | ---------- |
+| `PUBLISH_DOCKER_IMAGE` | Variable | disabled | `true`     |
+| `PUBLISH_HELM_CHART`   | Variable | disabled | `true`     |
+| `CANONICAL_REPOSITORY` | Variable | —        | `org/repo` |
+
+`CANONICAL_REPOSITORY` must match `github.repository` exactly for publish jobs
+to run. Set to your GitHub org and repo name (e.g. `jazicorn/hatch`).
+
+`PUBLISH_DOCKER_IMAGE` and `PUBLISH_HELM_CHART` each gate their respective
+publish jobs independently.
+
+---
+
+## Changelog guard
+
+| Variable                  | Type     | Default | Values                    |
+| ------------------------- | -------- | ------- | ------------------------- |
+| `GUARD_RELEASE_ARTIFACTS` | Variable | enabled | `false` / unset           |
+| `RELEASE_BOT_NAMES`       | Variable | —       | comma-separated bot names |
+
+`GUARD_RELEASE_ARTIFACTS` blocks PRs that modify `CHANGELOG.md` unless the
+author is in `RELEASE_BOT_NAMES`. Set `RELEASE_BOT_NAMES` to your semantic-
+release bot's GitHub username (e.g. `github-actions[bot],release-bot`).
+
+---
+
+## Local CI override (`ACT`)
+
+When running workflows locally via `act` (`./dev test-ci`), the runner exports
+`ACT=true`. Workflows can branch on this to skip steps that require real GitHub
+infrastructure (secrets, token scopes, publishing).
+
+```yaml
+- name: Skip publishing under act
+  if: ${{ !env.ACT }}
+  run: ...
+```
+
+---
+
+## Quick-start variable checklist
+
+For a fresh repository setup, set these variables before the first push:
+
+```text
+CANONICAL_REPOSITORY     = <org>/<repo>
+ENABLE_GO_ANALYSIS       = false        # until Go source is written
+RELEASE_BOT_NAMES        = github-actions[bot]
+```
+
+Enable as the project progresses:
+
+| Milestone     | Variable to enable                                          |
+| ------------- | ----------------------------------------------------------- |
+| M1 (Go src)   | Remove `ENABLE_GO_ANALYSIS=false`                           |
+| First release | `ENABLE_SEMANTIC_RELEASE=true`, `PUBLISH_DOCKER_IMAGE=true` |

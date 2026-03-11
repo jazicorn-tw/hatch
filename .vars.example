@@ -7,25 +7,34 @@
 # - Must NOT be committed
 # - Contains NON-SECRET values only
 #
-# See docs/devops/RELEASE_GATING.md for details.
+# See docs/devops/CI_VARIABLES.md for full reference.
 # -----------------------------------------------------------------------------
-
-# Enable semantic-release locally when running with `act`
-ENABLE_SEMANTIC_RELEASE=true
 
 # Canonical repository allowed to publish artifacts
 # Format: <owner>/<repo>
-CANONICAL_REPOSITORY=your-org/{{project-name}}
+CANONICAL_REPOSITORY=your-org/hatch
 
-# Release artifact guard — enabled by default (unset = enabled); set to 'false' to disable
+# ── Release ──────────────────────────────────────────────────────────────────
+
+# Enable semantic-release locally when running with `act`
+# ENABLE_SEMANTIC_RELEASE=true
+
+# Release artifact guard — enabled by default (unset = enabled)
 # GUARD_RELEASE_ARTIFACTS=false
 
-# Artifact publishing — disabled by default (unset = disabled); set to 'true' to enable
+# Names allowed to commit release artifacts (comma-separated)
+# RELEASE_BOT_NAMES=github-actions[bot]
+
+# Artifact publishing — disabled by default (unset = disabled)
 # PUBLISH_DOCKER_IMAGE=true
 # PUBLISH_HELM_CHART=true
 
-# CI feature flags — enabled by default (unset = enabled); set to 'false' to skip
-# ENABLE_STATIC_ANALYSIS=false
-# ENABLE_SONAR=false
+# ── CI feature flags ─────────────────────────────────────────────────────────
+# All enabled by default (unset = enabled); set to 'false' to skip
+
+# Gates go vet + staticcheck + go build + go test
+# Set to false until Go source exists (Milestone 1)
+ENABLE_GO_ANALYSIS=false
+
 # ENABLE_MD_LINT=false
 # ENABLE_DOCTOR_SNAPSHOT=false
