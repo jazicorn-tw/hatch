@@ -22,6 +22,15 @@ if [[ -z "${1:-}" ]]; then
   exit 1
 fi
 
+# ── Gum availability (for output only — optional, falls back to printf) ───────
+_CM_GUM=""
+if command -v gum >/dev/null 2>&1; then
+  _CM_GUM="gum"
+else
+  _gopath_gum="$(go env GOPATH 2>/dev/null)/bin/gum"
+  [[ -x "$_gopath_gum" ]] && _CM_GUM="$_gopath_gum"
+fi
+
 # One-off bypass (use sparingly)
 if [[ "${SKIP_COMMIT_MSG_CHECK:-}" == "1" ]]; then
   echo "commit-msg: SKIP_COMMIT_MSG_CHECK=1 set; skipping commit message validation + release confirmation."
@@ -73,11 +82,27 @@ if [[ -n "$_commit_scope" && "$_commit_scope" != "release" && "${SKIP_SCOPE_CHEC
     done
 
     if [[ $_scope_valid -eq 0 ]]; then
-      printf '\ncommit-msg: ❌ scope validation failed\n' >&2
+      # Format scopes in a 4-column layout (14 chars per column)
+      _scope_rows="" _si=0 _scope_row=""
+      for _sv in "${_valid_scopes[@]}"; do
+        _scope_row+="$(printf '  %-14s' "$_sv")"
+        _si=$(( _si + 1 ))
+        if [[ $(( _si % 4 )) -eq 0 ]]; then
+          _scope_rows+="${_scope_row}"$'\n'
+          _scope_row=""
+        fi
+      done
+      [[ -n "$_scope_row" ]] && _scope_rows+="${_scope_row}"$'\n'
+
+      if [[ -n "$_CM_GUM" ]]; then
+        $_CM_GUM log --level error "scope validation failed" >&2
+      else
+        printf '\ncommit-msg: ❌ scope validation failed\n' >&2
+      fi
       printf '\n  Invalid scope: (%s)\n\n' "$_commit_scope" >&2
       printf '  Allowed scopes (.github/tags.yml):\n\n' >&2
-      printf '    ' >&2; printf '%s  ' "${_valid_scopes[@]}" >&2; printf '\n\n' >&2
-      printf '  Or omit the scope:  type: description\n\n' >&2
+      printf '%s' "$_scope_rows" >&2
+      printf '\n  Or omit the scope:  type: description\n\n' >&2
       exit 1
     fi
   fi
