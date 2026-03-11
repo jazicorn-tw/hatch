@@ -2,17 +2,19 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, act, ci, local]
 description:  "ADR-010: Local CI Simulation with `act`"
 -->
 <!-- markdownlint-disable-file MD036 -->
 
 # ADR-010: Local CI Simulation with `act`
 
-**Status:** Accepted  
-**Date:** 2026-01-24
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** Local GitHub Actions simulation for CI iteration and debugging
 
 ---
 

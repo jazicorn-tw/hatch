@@ -4,7 +4,7 @@ created_date: 2026-03-10
 updated_by:   jazicorn-tw
 updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, dx, local, tooling, onboarding]
 description:  "ADR-006: Local Developer Experience – gum-powered dev script, Doctor Checks, and Verification"
 -->
 # ADR-006: Local Developer Experience – gum-powered dev script, Doctor Checks, and Verification

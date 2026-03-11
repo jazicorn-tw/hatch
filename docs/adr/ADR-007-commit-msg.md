@@ -2,20 +2,19 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, commit, hooks, tooling]
 description:  "ADR-007: Commit Message Enforcement via Commitizen + repo-managed commit-msg hook"
 -->
 # ADR-007: Commit Message Enforcement via Commitizen + repo-managed commit-msg hook
 
-## Status
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** Commit message validation, repo-managed git hooks, and Conventional Commits enforcement
 
-Accepted
-
-## Date
-
-2026-01-20
+---
 
 ## Context
 

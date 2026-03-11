@@ -2,16 +2,20 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, db, runtime]
 description:  "ADR-001: Use SQLite + sqlite-vec for embedded persistence"
 -->
 
 # ADR-001: Use SQLite + sqlite-vec for Embedded Persistence
 
-- Date: 2026-03-10
-- Status: Accepted
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** Persistence layer, data storage, and vector search
+
+---
 
 ## Context
 

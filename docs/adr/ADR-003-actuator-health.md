@@ -2,16 +2,20 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, api, runtime]
 description:  "ADR-003: Expose /ping and /health via Go net/http"
 -->
 
 # ADR-003: Expose `/ping` and `/health` via Go `net/http`
 
-- Date: 2026-03-10
-- Status: Accepted
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** HTTP server health and liveness endpoints
+
+---
 
 ## Context
 

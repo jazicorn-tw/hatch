@@ -2,9 +2,9 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-05
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, deploy, devops, runtime]
 description:  "ADR-009: Deployment Strategy"
 -->
 # ADR-009: Deployment Strategy

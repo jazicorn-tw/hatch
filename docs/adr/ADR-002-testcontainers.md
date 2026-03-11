@@ -2,16 +2,20 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, test, db]
 description:  "ADR-002: Use in-memory SQLite for Go integration tests"
 -->
 
 # ADR-002: Use In-Memory SQLite for Go Integration Tests
 
-- Date: 2026-03-10
-- Status: Accepted
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** Integration testing strategy for all database-backed packages
+
+---
 
 ## Context
 

@@ -1,10 +1,10 @@
 <!--
 created_by:   jazicorn-tw
-created_date: 2026-03-010
+created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, tooling, qa, build]
 description:  "ADR-000: Establish Formatting, Linting, and Static Analysis First"
 -->
 <!-- markdownlint-disable-file MD036 -->
@@ -12,7 +12,7 @@ description:  "ADR-000: Establish Formatting, Linting, and Static Analysis First
 # ADR-000: Establish Formatting, Linting, and Static Analysis First
 
 **Status:** Accepted
-**Date:** 2026-01-19
+**Date:** 2026-03-10
 **Decision Makers:** Project Maintainers
 **Scope:** Entire codebase (current and future projects)
 

@@ -2,15 +2,15 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, ci, devops]
 description:  "ADR-012: Branching Strategy"
 -->
 # ADR-012: Branching Strategy
 
 - **Status:** Accepted
-- **Date:** 2026-03-08
+- **Date:** 2026-03-10
 - **Deciders:** Project maintainers
 - **Scope:** Branch naming, PR targets, release promotion flow
 

@@ -2,16 +2,17 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, api, phases]
 description:  "ADR-005: Phase security implementation (scaffold first, enforcement later)"
 -->
-
 # ADR-005: Phase Security Implementation (Scaffold First, Enforcement Later)
 
-- Date: 2026-03-10
-- Status: Accepted
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** HTTP API and SSH TUI authentication scaffolding and enforcement timeline
 
 ## Context
 

@@ -2,16 +2,20 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, env, config, local]
 description:  "ADR-004: Support .env for local dev without overriding CI/prod"
 -->
 
 # ADR-004: Support `.env` for Local Dev Without Overriding CI/Prod
 
-- Date: 2026-03-10
-- Status: Accepted
+- **Status:** Accepted
+- **Date:** 2026-03-10
+- **Deciders:** Project maintainers
+- **Scope:** Local development configuration and environment variable precedence
+
+---
 
 ## Context
 

@@ -2,15 +2,15 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-11
 status:       active
-tags:         [adr]
+tags:         [adr, ci, deploy]
 description:  "ADR-008: CI-Managed Releases with semantic-release"
 -->
 # ADR-008: CI-Managed Releases with semantic-release
 
 - **Status:** Accepted
-- **Date:** 2026-01-22
+- **Date:** 2026-03-10
 - **Deciders:** Project maintainers
 - **Scope:** Release management, versioning, changelog generation
 
