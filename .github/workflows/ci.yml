@@ -18,7 +18,7 @@ jobs:
   quality:
     name: go vet + staticcheck
     runs-on: ubuntu-latest
-    if: ${{ vars.ENABLE_GO_ANALYSIS != 'false' }}
+    if: ${{ vars.ENABLE_GO_ANALYSIS != 'FALSE' }}
 
     env:
       CI: true
@@ -45,7 +45,7 @@ jobs:
   test:
     name: Build + test
     runs-on: ubuntu-latest
-    if: ${{ vars.ENABLE_GO_ANALYSIS != 'false' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    if: ${{ vars.ENABLE_GO_ANALYSIS != 'FALSE' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
 
     needs:
       - quality
@@ -80,7 +80,7 @@ jobs:
   markdown-lint:
     name: Markdown lint (markdownlint-cli2)
     runs-on: ubuntu-latest
-    if: ${{ vars.ENABLE_MD_LINT != 'false' }}
+    if: ${{ vars.ENABLE_MD_LINT != 'FALSE' }}
 
     steps:
       - name: Checkout

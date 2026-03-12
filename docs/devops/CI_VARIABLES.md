@@ -18,13 +18,13 @@ GitHub Actions repository variables for this project. Set these in:
 
 | Variable             | Type     | Default | Values          |
 | -------------------- | -------- | ------- | --------------- |
-| `ENABLE_GO_ANALYSIS` | Variable | enabled | `false` / unset |
+| `ENABLE_GO_ANALYSIS` | Variable | enabled | `FALSE` / unset |
 
 Gates both `go vet` and `staticcheck` in the `quality` job, and the `test` job
 (`go build` + `go test`).
 
-Set to `false` **before Go source exists** to prevent CI from failing with
-"matched no packages". Remove or set to `true` once `internal/` is scaffolded.
+Set to `FALSE` **before Go source exists** to prevent CI from failing with
+"matched no packages". Remove or set to `TRUE` once `internal/` is scaffolded.
 
 ---
 
@@ -32,7 +32,7 @@ Set to `false` **before Go source exists** to prevent CI from failing with
 
 | Variable          | Type     | Default | Values          |
 | ----------------- | -------- | ------- | --------------- |
-| `ENABLE_MD_LINT`  | Variable | enabled | `false` / unset |
+| `ENABLE_MD_LINT`  | Variable | enabled | `FALSE` / unset |
 
 Gates the `markdown-lint` job. Disable temporarily if markdownlint is being
 configured or if bulk doc changes are in progress.
@@ -43,7 +43,7 @@ configured or if bulk doc changes are in progress.
 
 | Variable                  | Type     | Default | Values          |
 | ------------------------- | -------- | ------- | --------------- |
-| `ENABLE_DOCTOR_SNAPSHOT`  | Variable | enabled | `false` / unset |
+| `ENABLE_DOCTOR_SNAPSHOT`  | Variable | enabled | `FALSE` / unset |
 
 Gates the `doctor` workflow entirely. The doctor snapshot runs on push to
 `main`/`staging`/`canary` and manual dispatch — not on PRs. Disable if the
@@ -55,11 +55,11 @@ workflow is producing noise or consuming unnecessary CI minutes.
 
 | Variable                  | Type     | Default  | Values           |
 | ------------------------- | -------- | -------- | ---------------- |
-| `ENABLE_SEMANTIC_RELEASE` | Variable | disabled | `true` / unset   |
+| `ENABLE_SEMANTIC_RELEASE` | Variable | disabled | `TRUE` / unset   |
 
-Must be explicitly set to `true` to allow `semantic-release` to cut a tag,
-update `CHANGELOG.md`, and create a GitHub Release. Leave unset (or `false`)
-during active development to prevent accidental releases.
+Must be explicitly set to `TRUE` to allow `semantic-release` to cut a tag,
+update `CHANGELOG.md`, and create a GitHub Release. Leave unset during active
+development to prevent accidental releases.
 
 ---
 
@@ -67,8 +67,8 @@ during active development to prevent accidental releases.
 
 | Variable               | Type     | Default  | Values     |
 | ---------------------- | -------- | -------- | ---------- |
-| `PUBLISH_DOCKER_IMAGE` | Variable | disabled | `true`     |
-| `PUBLISH_HELM_CHART`   | Variable | disabled | `true`     |
+| `PUBLISH_DOCKER_IMAGE` | Variable | disabled | `TRUE`     |
+| `PUBLISH_HELM_CHART`   | Variable | disabled | `TRUE`     |
 | `CANONICAL_REPOSITORY` | Variable | —        | `org/repo` |
 
 `CANONICAL_REPOSITORY` must match `github.repository` exactly for publish jobs
@@ -83,7 +83,7 @@ publish jobs independently.
 
 | Variable                  | Type     | Default | Values                    |
 | ------------------------- | -------- | ------- | ------------------------- |
-| `GUARD_RELEASE_ARTIFACTS` | Variable | enabled | `false` / unset           |
+| `GUARD_RELEASE_ARTIFACTS` | Variable | enabled | `FALSE` / unset           |
 | `RELEASE_BOT_NAMES`       | Variable | —       | comma-separated bot names |
 
 `GUARD_RELEASE_ARTIFACTS` blocks PRs that modify `CHANGELOG.md` unless the
@@ -112,7 +112,7 @@ For a fresh repository setup, set these variables before the first push:
 
 ```text
 CANONICAL_REPOSITORY     = <org>/<repo>
-ENABLE_GO_ANALYSIS       = false        # until Go source is written
+ENABLE_GO_ANALYSIS       = FALSE        # until Go source is written
 RELEASE_BOT_NAMES        = github-actions[bot]
 ```
 
@@ -121,4 +121,4 @@ Enable as the project progresses:
 | Milestone     | Variable to enable                                          |
 | ------------- | ----------------------------------------------------------- |
 | M1 (Go src)   | Remove `ENABLE_GO_ANALYSIS=false`                           |
-| First release | `ENABLE_SEMANTIC_RELEASE=true`, `PUBLISH_DOCKER_IMAGE=true` |
+| First release | `ENABLE_SEMANTIC_RELEASE=TRUE`, `PUBLISH_DOCKER_IMAGE=TRUE` |

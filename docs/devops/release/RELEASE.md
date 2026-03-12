@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-12
 status:       active
 tags:         [devops]
 description:  "Releases (semantic-release)"
@@ -34,7 +34,7 @@ description:  "Releases (semantic-release)"
 2. Ensure one of the release gates is enabled:
 
    ```text
-   ENABLE_SEMANTIC_RELEASE=true
+   ENABLE_SEMANTIC_RELEASE=TRUE
    ```
 
    or run the workflow manually with:
@@ -184,7 +184,7 @@ Releases are **disabled by default**.
 The release job runs only when **one** is true:
 
 ```text
-ENABLE_SEMANTIC_RELEASE=true
+ENABLE_SEMANTIC_RELEASE=TRUE
 ```
 
 or manual workflow input:
@@ -206,8 +206,8 @@ independently on tag push (`v*.*.*`). It requires **all** of:
 2. The corresponding feature flag enabled
 
 ```text
-PUBLISH_DOCKER_IMAGE=true   # Docker image → ghcr.io/<owner>/<repo>
-PUBLISH_HELM_CHART=true     # Helm chart  → ghcr.io/<owner>/charts
+PUBLISH_DOCKER_IMAGE=TRUE   # Docker image → ghcr.io/<owner>/<repo>
+PUBLISH_HELM_CHART=TRUE     # Helm chart  → ghcr.io/<owner>/charts
 ```
 
 Forks can run CI safely but **cannot publish artifacts**.
@@ -417,7 +417,7 @@ Did the workflow run?
 - **No releasable commits**
   - Use `feat:` / `fix:` / `perf:` in the *squash merge* commit
 - **Workflow didn’t run**
-  - Set `ENABLE_SEMANTIC_RELEASE=true` or use manual input
+  - Set `ENABLE_SEMANTIC_RELEASE=TRUE` or use manual input
 - **Artifacts skipped**
   - Confirm canonical repo + feature flag enabled
 

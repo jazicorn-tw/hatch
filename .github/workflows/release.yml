@@ -111,7 +111,7 @@ jobs:
       always() &&
       (needs.docker-build.result == 'success' || needs.docker-build.result == 'skipped') &&
       (needs.helm-lint.result == 'success' || needs.helm-lint.result == 'skipped') &&
-      (inputs.enable_release == 'true' || vars.ENABLE_SEMANTIC_RELEASE == 'true') &&
+      (inputs.enable_release == 'true' || vars.ENABLE_SEMANTIC_RELEASE == 'TRUE') &&
       (github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&

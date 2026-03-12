@@ -12,6 +12,7 @@
 tags:
   - adr
   - act
+  - actions
   - api
   - build
   - ci

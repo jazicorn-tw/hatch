@@ -37,7 +37,7 @@ jobs:
             "CHANGELOG.md"
           )
 
-          if [[ "${GUARD_RELEASE_ARTIFACTS:-true}" != "true" ]]; then
+          if [[ "${GUARD_RELEASE_ARTIFACTS:-TRUE}" != "TRUE" ]]; then
             echo "ℹ️ Guard disabled via vars.GUARD_RELEASE_ARTIFACTS"
             exit 0
           fi
