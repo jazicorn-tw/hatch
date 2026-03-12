@@ -27,7 +27,7 @@ set -euo pipefail
 #   docker up              start Docker Compose services
 #   docker down            stop Docker Compose services
 #   docker reset           reset Docker Compose (down -v + up)
-#   test-ci                run all CI workflows locally via act (requires act + Docker)
+#   test-ci                run local-safe workflows via act: ci, doctor, changelog-guard
 #   test-ci <workflow>     run a specific workflow (e.g. test-ci ci, test-ci release)
 #   changelog              preview semantic-release changelog (dry-run, no release)
 #   clean local            clean local build artifacts

@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-12
 status:       active
 tags:         [planning]
 description:  "Hatch development roadmap — versioned milestones"
@@ -27,10 +27,10 @@ Repo setup, CI/CD, developer tooling, and planning artifacts.
 - [x] ADRs: architecture decisions documented (ADR-000 through ADR-011)
 - [x] Docs: onboarding, contributing, architecture, roadmap, commit conventions
 - [x] Docs: tooling reference (dev, doctor, bootstrap, pre-commit)
-- [ ] `.env.example`: env var template for local development
-- [ ] `docs/devops/CI_VARIABLES.md`: GitHub repo variables reference and quick-start checklist
-- [ ] `./dev test-ci`: local CI simulation via `act`
-- [ ] `./dev changelog`: semantic-release dry-run / changelog preview
+- [x] `.env.example`: env var template for local development
+- [x] `docs/devops/CI_VARIABLES.md`: GitHub repo variables reference and quick-start checklist
+- [x] `./dev test-ci`: local CI simulation via `act`
+- [x] `./dev changelog`: semantic-release dry-run / changelog preview
 
 ---
 
