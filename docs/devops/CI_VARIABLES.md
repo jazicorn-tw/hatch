@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-12
 status:       active
 tags:         [devops, ci, config]
 description:  "GitHub Actions repository variables — what each controls and when to set it"
@@ -45,8 +45,9 @@ configured or if bulk doc changes are in progress.
 | ------------------------- | -------- | ------- | --------------- |
 | `ENABLE_DOCTOR_SNAPSHOT`  | Variable | enabled | `false` / unset |
 
-Gates the `doctor` workflow entirely. Disabling skips environment health
-snapshot uploads. Rarely needed.
+Gates the `doctor` workflow entirely. The doctor snapshot runs on push to
+`main`/`staging`/`canary` and manual dispatch — not on PRs. Disable if the
+workflow is producing noise or consuming unnecessary CI minutes.
 
 ---
 
