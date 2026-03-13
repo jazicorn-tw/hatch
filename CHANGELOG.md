@@ -1,5 +1,27 @@
 # 📦 Release History
 
+## 📦 Release 0.1.2
+
+### 🐛 Fixes
+
+- **qa:** resolve remaining SonarQube issues in semantic-release-impact.mjs (50e9ca7)
+
+### 🤖 CI / CD
+
+- **actions:** add Dependabot for automated dependency updates (a475b37)
+
+
+
+## 0.1.2
+
+### 🐛 Fixes
+
+- **qa:** resolve remaining SonarQube issues in semantic-release-impact.mjs
+
+### 🤖 CI / CD
+
+- **actions:** add Dependabot for automated dependency updates
+
 ## 📦 Release 0.1.1
 
 ### 🐛 Fixes
