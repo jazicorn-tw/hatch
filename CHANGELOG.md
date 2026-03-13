@@ -1,5 +1,27 @@
 # 📦 Release History
 
+## 📦 Release 0.1.1
+
+### 🐛 Fixes
+
+- **qa:** resolve SonarQube issues across workflows, Helm, Go, and scripts (1b931cf)
+
+### 🤖 CI / CD
+
+- **actions:** pin all GitHub Actions to full commit SHAs (94fd7df)
+
+
+
+## 0.1.1
+
+### 🐛 Fixes
+
+- **qa:** resolve SonarQube issues across workflows, Helm, Go, and scripts
+
+### 🤖 CI / CD
+
+- **actions:** pin all GitHub Actions to full commit SHAs
+
 ## 📦 Release 0.1.0
 
 ### ✨ Features
