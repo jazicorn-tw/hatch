@@ -13,11 +13,14 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source and build.
+# Copy only the Go source directories needed for the build.
+# Explicit paths prevent sensitive files (env vars, keys, docs) from
+# entering the build context even if .dockerignore is misconfigured.
 # modernc.org/sqlite is pure Go — CGO_ENABLED=0 works without a C toolchain.
 # -ldflags="-s -w"  strips debug info and DWARF tables (smaller binary).
 # -trimpath          removes local build paths from stack traces.
-COPY . .
+COPY cmd/ cmd/
+COPY internal/ internal/
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -trimpath -o /hatch ./cmd/hatch/
 
@@ -27,6 +30,10 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 #   - includes CA certificates (required for LLM API calls)
 #   - runs as uid 65532 (nonroot) with /home/nonroot home directory
 FROM gcr.io/distroless/static-debian12:nonroot
+
+# Explicit USER directive — distroless:nonroot defaults to uid 65532 but
+# declaring it here satisfies static analysis tools (e.g. SonarQube S6471).
+USER nonroot
 
 COPY --from=builder /hatch /hatch
 
