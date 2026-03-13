@@ -4,13 +4,12 @@ on:
   pull_request:
   push:
 
-permissions:
-  contents: read
-
 jobs:
   guard-release-artifacts:
     name: Guard release artifacts (changelog)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout (full history)

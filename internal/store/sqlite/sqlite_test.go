@@ -10,20 +10,25 @@ import (
 	"github.com/jazicorn/hatch/internal/store"
 )
 
+const (
+	testDB  = "test.db"
+	errOpen = "Open: %v"
+)
+
 func TestOpen(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "test.db")
+	path := filepath.Join(t.TempDir(), testDB)
 	s, err := Open(path)
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(errOpen, err)
 	}
 	defer s.Close()
 }
 
 func TestOpenRunsMigrations(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "test.db")
+	path := filepath.Join(t.TempDir(), testDB)
 	s, err := Open(path)
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(errOpen, err)
 	}
 	defer s.Close()
 
@@ -36,10 +41,10 @@ func TestOpenRunsMigrations(t *testing.T) {
 }
 
 func TestAddAndSearch(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "test.db")
+	path := filepath.Join(t.TempDir(), testDB)
 	s, err := Open(path)
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(errOpen, err)
 	}
 	defer s.Close()
 
@@ -66,10 +71,10 @@ func TestAddAndSearch(t *testing.T) {
 }
 
 func TestSearchEmpty(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "test.db")
+	path := filepath.Join(t.TempDir(), testDB)
 	s, err := Open(path)
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(errOpen, err)
 	}
 	defer s.Close()
 
@@ -83,10 +88,10 @@ func TestSearchEmpty(t *testing.T) {
 }
 
 func TestAddReplaces(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "test.db")
+	path := filepath.Join(t.TempDir(), testDB)
 	s, err := Open(path)
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(errOpen, err)
 	}
 	defer s.Close()
 

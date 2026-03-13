@@ -27,7 +27,8 @@ func TestCosineZeroVector(t *testing.T) {
 
 func TestCosineDimensionMismatchPanics(t *testing.T) {
 	defer func() {
-		if r := recover(); r == nil {
+		r := recover()
+		if r == nil {
 			t.Error("expected panic on dimension mismatch, got none")
 		}
 	}()

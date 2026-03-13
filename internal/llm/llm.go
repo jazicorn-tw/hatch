@@ -2,7 +2,7 @@ package llm
 
 import "context"
 
-// LLM generates text completions from a prompt.
-type LLM interface {
+// Completer generates text completions from a prompt.
+type Completer interface {
 	Complete(ctx context.Context, prompt string) (string, error)
 }

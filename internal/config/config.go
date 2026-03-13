@@ -91,7 +91,8 @@ func Init() error {
 	}
 
 	path := filepath.Join(dir, "config.yaml")
-	if _, err := os.Stat(path); err == nil {
+	_, statErr := os.Stat(path)
+	if statErr == nil {
 		fmt.Printf("config already exists: %s\n", path)
 		return nil
 	}

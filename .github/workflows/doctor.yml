@@ -5,13 +5,12 @@ on:
   push:
     branches: [ main, staging, canary ]
 
-permissions:
-  contents: read
-
 jobs:
   doctor:
     runs-on: ubuntu-latest
     if: ${{ vars.ENABLE_DOCTOR_SNAPSHOT != 'FALSE' }}
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout

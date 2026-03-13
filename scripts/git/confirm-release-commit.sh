@@ -80,8 +80,10 @@ if [[ -z "${header// /}" ]]; then
   exit 0
 fi
 
+_HEURISTIC="heuristic"
+
 impact="none"
-used="heuristic"
+used="${_HEURISTIC}"
 rule_label=""
 rule_detail=""
 sync_warn=""
@@ -103,20 +105,21 @@ else
         impact=*) impact="${line#impact=}" ;;
         rule_label=*) rule_label="${line#rule_label=}" ;;
         rule_detail=*) rule_detail="${line#rule_detail=}" ;;
+        *) ;;
       esac
     done <<< "${out}"
     used="semantic-release"
   elif [[ "${_src_exit}" -eq 3 ]]; then
     sync_warn="@semantic-release/commit-analyzer not installed — run 'yarn install' for accurate detection"
   else
-    sync_warn="semantic-release-impact.mjs failed (exit ${_src_exit}) — using heuristic"
+    sync_warn="semantic-release-impact.mjs failed (exit ${_src_exit}) — using ${_HEURISTIC}"
   fi
 fi
 
 # -----------------------------------------------------------------------------
 # Fallback heuristic
 # -----------------------------------------------------------------------------
-if [[ "${used}" == "heuristic" ]]; then
+if [[ "${used}" == "${_HEURISTIC}" ]]; then
   re='^([a-zA-Z0-9]+)(\([^)]+\))?(!)?:[[:space:]].+'
   cc_type=""
   cc_breaking="0"
@@ -132,15 +135,15 @@ if [[ "${used}" == "heuristic" ]]; then
 
   if [[ "${cc_breaking}" == "1" ]]; then
     impact="major"
-    rule_label="heuristic"
+    rule_label="${_HEURISTIC}"
     rule_detail="breaking change detected (! or BREAKING CHANGE)"
   elif [[ "${cc_type}" == "feat" ]]; then
     impact="minor"
-    rule_label="heuristic"
+    rule_label="${_HEURISTIC}"
     rule_detail="type=feat"
   elif [[ "${cc_type}" == "fix" || "${cc_type}" == "perf" ]]; then
     impact="patch"
-    rule_label="heuristic"
+    rule_label="${_HEURISTIC}"
     rule_detail="type=${cc_type}"
   else
     impact="none"
@@ -159,7 +162,7 @@ if [[ -r /dev/tty && -w /dev/tty ]]; then
   exec </dev/tty >/dev/tty 2>&1
 
   # Styling
-  if test -t 1; then
+  if [[ -t 1 ]]; then
     ESC=$'\033'
     RESET="${ESC}[0m"
     BOLD="${ESC}[1m"
@@ -189,7 +192,7 @@ if [[ -r /dev/tty && -w /dev/tty ]]; then
 
   # Prepend a newline so the warning line prints cleanly above the border.
   _sync_warn_block=""
-  if [[ -n "${sync_warn}" && "${used}" == "heuristic" ]]; then
+  if [[ -n "${sync_warn}" && "${used}" == "${_HEURISTIC}" ]]; then
     _sync_warn_block="${YELLOW}⚠️  Accuracy: ${sync_warn}${RESET}"$'\n'
   fi
 
@@ -248,7 +251,7 @@ fi
 
 echo "⚠️  Release-triggering commit detected (${impact}), but no TTY available."
 echo "    Proceeding without confirmation."
-if [[ -n "${sync_warn}" && "${used}" == "heuristic" ]]; then
+if [[ -n "${sync_warn}" && "${used}" == "${_HEURISTIC}" ]]; then
   echo "    Accuracy: ${sync_warn}"
 fi
 exit 0

@@ -9,7 +9,7 @@ type Document struct {
 	Content string
 }
 
-// Source fetches documents from an external or local origin.
-type Source interface {
+// Fetcher fetches documents from an external or local origin.
+type Fetcher interface {
 	Fetch(ctx context.Context) ([]Document, error)
 }

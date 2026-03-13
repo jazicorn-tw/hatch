@@ -17,6 +17,8 @@ serviceAccount:
   create: true
   annotations: {}
   name: ""
+  # hatch does not call the Kubernetes API — keep false to avoid mounting an unused token.
+  automountToken: false
 
 podAnnotations: {}
 
@@ -66,13 +68,16 @@ secrets:
   anthropicApiKey: ""
   openaiApiKey: ""
 
-resources: {}
-  # limits:
-  #   cpu: 500m
-  #   memory: 256Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+    ephemeral-storage: 128Mi
+  limits:
+    memory: 256Mi
+    ephemeral-storage: 512Mi
+    # cpu: 500m   # intentionally omitted — Go GC is sensitive to CPU throttling;
+    #             # add a limit via --set for your environment if needed
 
 nodeSelector: {}
 tolerations: []
