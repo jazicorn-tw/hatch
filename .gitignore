@@ -50,8 +50,8 @@ go.work.sum
 # .idea/
 .vscode/
 
-# Hatch binary
-hatch
+# Hatch binary (compiled output at repo root only — does not match cmd/hatch/)
+/hatch
 
 # SQLite database + WAL mode sidecars
 *.db
