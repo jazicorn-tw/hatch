@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hatch.fullname" . }}
+  labels:
+    {{- include "hatch.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "hatch.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hatch.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hatch.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ include "hatch.imageTag" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # hatch serve starts the SSH + HTTP server (available from Milestone 6).
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+              protocol: TCP
+            - name: ssh
+              containerPort: {{ .Values.service.sshPort }}
+              protocol: TCP
+          env:
+            - name: HATCH_LLM_PROVIDER
+              value: {{ .Values.config.llmProvider | quote }}
+            - name: HATCH_EMBED_PROVIDER
+              value: {{ .Values.config.embedProvider | quote }}
+            - name: HATCH_SSH_PORT
+              value: {{ .Values.config.sshPort | quote }}
+            - name: HATCH_HTTP_PORT
+              value: {{ .Values.config.httpPort | quote }}
+            - name: HATCH_WEB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hatch.fullname" . }}
+                  key: webPassword
+            - name: HATCH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hatch.fullname" . }}
+                  key: jwtSecret
+            {{- if .Values.config.dbPath }}
+            - name: HATCH_DB_PATH
+              value: {{ .Values.config.dbPath | quote }}
+            {{- end }}
+            {{- if .Values.secrets.anthropicApiKey }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hatch.fullname" . }}
+                  key: anthropicApiKey
+            {{- end }}
+            {{- if .Values.secrets.openaiApiKey }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hatch.fullname" . }}
+                  key: openaiApiKey
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "hatch.fullname" . }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

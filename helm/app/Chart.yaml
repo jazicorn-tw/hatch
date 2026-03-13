@@ -1,0 +1,8 @@
+apiVersion: v2
+name: hatch
+description: Local-first quiz and kata engine powered by LLMs and vector search
+type: application
+# version and appVersion are overridden at package time by publish.yml:
+#   helm package helm/app --version "$VERSION" --app-version "$VERSION"
+version: 0.1.0
+appVersion: "0.1.0"
