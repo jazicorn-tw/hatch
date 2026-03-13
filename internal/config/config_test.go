@@ -6,10 +6,12 @@ import (
 	"github.com/jazicorn/hatch/internal/config"
 )
 
+const errLoad = "Load: %v"
+
 func TestLoadDefaults(t *testing.T) {
 	cfg, err := config.Load()
 	if err != nil {
-		t.Fatalf("Load: %v", err)
+		t.Fatalf(errLoad, err)
 	}
 	if cfg.LLMProvider != "anthropic" {
 		t.Errorf("LLMProvider: want anthropic, got %s", cfg.LLMProvider)
@@ -31,7 +33,7 @@ func TestLoadDefaults(t *testing.T) {
 func TestValidateDefaults(t *testing.T) {
 	cfg, err := config.Load()
 	if err != nil {
-		t.Fatalf("Load: %v", err)
+		t.Fatalf(errLoad, err)
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("default config should be valid, got: %v", err)
@@ -40,27 +42,27 @@ func TestValidateDefaults(t *testing.T) {
 
 func TestValidateUnknownLLMProvider(t *testing.T) {
 	cfg := &config.Config{LLMProvider: "unknown", EmbedProvider: "ollama", SSHPort: 2222, HTTPPort: 8080}
-	if err := cfg.Validate(); err == nil {
+	if cfg.Validate() == nil {
 		t.Error("expected error for unknown llm_provider, got nil")
 	}
 }
 
 func TestValidateUnknownEmbedProvider(t *testing.T) {
 	cfg := &config.Config{LLMProvider: "anthropic", EmbedProvider: "unknown", SSHPort: 2222, HTTPPort: 8080}
-	if err := cfg.Validate(); err == nil {
+	if cfg.Validate() == nil {
 		t.Error("expected error for unknown embed_provider, got nil")
 	}
 }
 
 func TestValidatePortOutOfRange(t *testing.T) {
 	cfg := &config.Config{LLMProvider: "anthropic", EmbedProvider: "ollama", SSHPort: 0, HTTPPort: 8080}
-	if err := cfg.Validate(); err == nil {
+	if cfg.Validate() == nil {
 		t.Error("expected error for ssh_port=0, got nil")
 	}
 
 	cfg.SSHPort = 2222
 	cfg.HTTPPort = 99999
-	if err := cfg.Validate(); err == nil {
+	if cfg.Validate() == nil {
 		t.Error("expected error for http_port=99999, got nil")
 	}
 }
@@ -73,7 +75,7 @@ func TestLoadEnvOverride(t *testing.T) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		t.Fatalf("Load: %v", err)
+		t.Fatalf(errLoad, err)
 	}
 	if cfg.LLMProvider != "openai" {
 		t.Errorf("LLMProvider: want openai, got %s", cfg.LLMProvider)

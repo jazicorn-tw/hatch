@@ -19,6 +19,7 @@ log() {
   else
     printf 'INFO %s\n' "$*"
   fi
+  return 0
 }
 
 warn() {
@@ -27,6 +28,7 @@ warn() {
   else
     printf 'WARN %s\n' "$*" >&2
   fi
+  return 0
 }
 
 # die [exit_code] message  (exit_code defaults to 1)
@@ -41,7 +43,10 @@ die() {
   exit "${_code}"
 }
 
-have() { command -v "$1" >/dev/null 2>&1; }
+have() {
+  local cmd="$1"
+  command -v "$cmd" >/dev/null 2>&1
+}
 
 # find_compose_file — prints path to first compose file found, returns 1 if none.
 find_compose_file() {

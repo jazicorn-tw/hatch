@@ -2,7 +2,7 @@ package agent
 
 import "context"
 
-// Agent orchestrates the quiz or kata session lifecycle.
-type Agent interface {
+// Runner orchestrates the quiz or kata session lifecycle.
+type Runner interface {
 	Run(ctx context.Context) error
 }

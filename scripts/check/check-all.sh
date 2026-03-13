@@ -18,14 +18,15 @@ source "${_LIB}/shell-utils.sh"
 
 _SELF="$(realpath "${BASH_SOURCE[0]}")"
 _CHECK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_DIVIDER="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 passed=0
 failed=0
 results=()
 
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log "${_DIVIDER}"
 log "🔍 Running all checks in scripts/check/"
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log "${_DIVIDER}"
 log ""
 
 while IFS= read -r script; do
@@ -42,12 +43,12 @@ while IFS= read -r script; do
   log ""
 done < <(find "$_CHECK_DIR" -maxdepth 1 -type f -name "*.sh" | sort)
 
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log "${_DIVIDER}"
 log "check-all: ${passed} passed, ${failed} failed"
 log ""
 for r in "${results[@]}"; do
   log "$r"
 done
-log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log "${_DIVIDER}"
 
 [[ $failed -eq 0 ]]

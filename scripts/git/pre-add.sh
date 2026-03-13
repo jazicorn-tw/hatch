@@ -63,6 +63,7 @@ for arg in "${args[@]:-}"; do
   case "${arg:-}" in
     -A|--all|.) all_mode=true ;;
     -u|--update) all_mode=true ;;
+    *) ;;
   esac
 done
 
@@ -75,7 +76,9 @@ collect_file() {
   case "$f" in
     *.md)                          md_files+=("$f") ;;
     scripts/*|.githooks/*|*.sh|*.bash|*.mjs|dev) script_files+=("$f") ;;
+    *) ;;
   esac
+  return 0
 }
 
 if [[ "$all_mode" == "true" ]]; then

@@ -22,6 +22,7 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
       pushing_to_release_branch=true
       break
       ;;
+    *) ;;
   esac
 done
 

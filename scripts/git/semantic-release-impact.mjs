@@ -34,14 +34,14 @@ async function loadReleaseConfig(repoRoot) {
   // 1) package.json#release
   const pkgPath = path.join(repoRoot, "package.json");
   const pkg = readJson(pkgPath);
-  if (pkg && pkg.release) return pkg.release;
+  if (pkg?.release) return pkg.release;
 
   // 2) cosmiconfig (optional) for .releaserc, release.config.js, etc.
   try {
     const { cosmiconfig } = await import("cosmiconfig");
     const explorer = cosmiconfig("release");
     const result = await explorer.search(repoRoot);
-    if (result && result.config) return result.config;
+    if (result?.config) return result.config;
   } catch {
     // ignore
   }
@@ -76,7 +76,7 @@ function normalizeAnalyzerConfig(releaseConfig) {
  * Minimal Conventional Commit parse to explain defaults and match releaseRules.
  */
 function parseConventional(message) {
-  const msg = message.replace(/\r/g, "");
+  const msg = message.replaceAll("\r", "");
   const header = msg.split("\n")[0] ?? "";
   const body = msg.split("\n").slice(1).join("\n");
 
@@ -95,7 +95,7 @@ function parseConventional(message) {
     breaking = Boolean(m[4]);
   }
 
-  if (/(^|\n)BREAKING[ -]CHANGE(\:|\s)/i.test(msg)) {
+  if (/(^|\n)BREAKING[ -]CHANGE(:|\s)/i.test(msg)) {
     breaking = true;
   }
 
@@ -139,6 +139,22 @@ function explainDefaultRule(parsed, impact) {
   return `${impact} (default rules)`;
 }
 
+function findMatchingRule(rules, parsed, impact) {
+  let found = null;
+  let foundIdx = -1;
+  for (let i = 0; i < rules.length; i += 1) {
+    const r = rules[i];
+    if (!r || typeof r !== "object") continue;
+    if (!("release" in r)) continue;
+    if (ruleMatches(parsed, r)) {
+      found = r;
+      foundIdx = i;
+      if (String(r.release) === String(impact)) break;
+    }
+  }
+  return found ? { rule: found, idx: foundIdx } : null;
+}
+
 async function main() {
   const repoRoot = process.argv[2] || process.cwd();
   const msgFile = process.argv[3];
@@ -148,7 +164,7 @@ async function main() {
     process.exit(2);
   }
 
-  const message = fs.readFileSync(msgFile, "utf8").replace(/\r/g, "");
+  const message = fs.readFileSync(msgFile, "utf8").replaceAll("\r", "");
 
   // Lazy import so hook remains fast if deps are missing.
   let analyzeCommits;
@@ -179,25 +195,11 @@ async function main() {
 
   const rules = analyzerOpts?.releaseRules;
   if (Array.isArray(rules) && rules.length > 0) {
-    let found = null;
-    let foundIdx = -1;
-
-    for (let i = 0; i < rules.length; i += 1) {
-      const r = rules[i];
-      if (!r || typeof r !== "object") continue;
-      if (!("release" in r)) continue;
-
-      if (ruleMatches(parsed, r)) {
-        found = r;
-        foundIdx = i;
-        // Prefer exact match with computed impact where possible
-        if (String(r.release) === String(impact)) break;
-      }
-    }
-
-    if (found) {
-      ruleLabel = `releaseRules[${foundIdx}]`;
-      ruleDetail = describeRule(found, foundIdx);
+    // Prefer exact match with computed impact where possible
+    const match = findMatchingRule(rules, parsed, impact);
+    if (match) {
+      ruleLabel = `releaseRules[${match.idx}]`;
+      ruleDetail = describeRule(match.rule, match.idx);
     } else {
       ruleLabel = "releaseRules";
       ruleDetail = "no matching rule found (defaults applied)";

@@ -14,12 +14,16 @@ errors=()
 warnings=()
 
 fail() {
+  local message="$1"
   status="fail"
-  errors+=("$1")
+  errors+=("$message")
+  return 0
 }
 
 warn() {
-  warnings+=("$1")
+  local message="$1"
+  warnings+=("$message")
+  return 0
 }
 
 # emit_json <check-name>
@@ -32,4 +36,5 @@ emit_json() {
     --argjson errors   "$(printf '%s\n' "${errors[@]:-}"   | jq -R . | jq -s .)" \
     --argjson warnings "$(printf '%s\n' "${warnings[@]:-}" | jq -R . | jq -s .)" \
     '{ check: $check, status: $status, errors: $errors, warnings: $warnings }'
+  return 0
 }

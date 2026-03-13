@@ -15,11 +15,12 @@ set -euo pipefail
 #   SKIP_TESTS=1      git commit ...   -> skip tests (format + lint still run)
 #   DEBUG_PRECOMMIT=1 git commit ...   -> print debug info
 
-log()   { printf '%s\n' "$*"; }
+log()   { printf '%s\n' "$*"; return 0; }
 debug() {
   if [[ "${DEBUG_PRECOMMIT:-}" == "1" ]]; then
     printf '%s\n' "pre-commit(debug): $*"
   fi
+  return 0
 }
 fail() {
   local step="$1" rc="${2:-1}"
@@ -56,6 +57,7 @@ while IFS= read -r f; do
       triggered_by="$f"
       break
       ;;
+    *) ;;
   esac
 
 done <<< "$CHANGED"
