@@ -41,7 +41,8 @@ async function loadReleaseConfig(repoRoot) {
     const { cosmiconfig } = await import("cosmiconfig");
     const explorer = cosmiconfig("release");
     const result = await explorer.search(repoRoot);
-    if (result?.config) return result.config;
+    const cfg = result?.config;
+    if (cfg) return cfg;
   } catch {
     // ignore
   }
