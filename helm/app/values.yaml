@@ -1,0 +1,79 @@
+# Default values for hatch.
+# Override with --set or a custom values file.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jazicorn-tw/hatch
+  pullPolicy: IfNotPresent
+  # Overrides the image tag — defaults to .Chart.AppVersion when left empty.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532   # distroless nonroot uid
+  runAsGroup: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# ── Ports ──────────────────────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  httpPort: 8080    # Web dashboard (Milestone 8)
+  sshPort: 2222     # SSH server (Milestone 6)
+
+# ── Persistence ────────────────────────────────────────────────────────────────
+# Mounts a PVC at /home/nonroot/.hatch so the SQLite database survives restarts.
+persistence:
+  enabled: true
+  storageClass: ""        # leave empty to use the cluster default
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /home/nonroot/.hatch
+
+# ── Config ─────────────────────────────────────────────────────────────────────
+# Mapped to HATCH_* environment variables inside the container.
+# See docs/providers/CONFIGURATION.md for full reference.
+config:
+  llmProvider: anthropic    # anthropic | openai | ollama
+  embedProvider: ollama     # ollama | openai
+  sshPort: "2222"
+  httpPort: "8080"
+  webPassword: changeme     # override with a real password in production
+  jwtSecret: ""             # required for SSH + web auth (Milestone 9)
+  dbPath: ""                # leave empty to use default: /home/nonroot/.hatch/hatch.db
+
+# ── Secrets ────────────────────────────────────────────────────────────────────
+# API keys injected as environment variables.
+# Set via --set or a sealed-secrets / external-secrets integration.
+secrets:
+  anthropicApiKey: ""
+  openaiApiKey: ""
+
+resources: {}
+  # limits:
+  #   cpu: 500m
+  #   memory: 256Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
