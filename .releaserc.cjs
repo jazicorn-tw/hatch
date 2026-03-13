@@ -11,8 +11,6 @@
  */
 'use strict';
 
-const isCI = Boolean(process.env.CI);
-
 const OTHER_SECTION = '🧩 Other';
 
 const SECTION_TITLES = {
@@ -205,33 +203,10 @@ module.exports = {
       },
     ],
 
-    // 4) Build artifacts (bootJar)
-    [
-      '@semantic-release/exec',
-      {
-        prepareCmd:
-          "./gradlew --no-daemon --gradle-user-home $GRADLE_USER_HOME -PreleaseVersion=${nextRelease.version} clean bootJar",
-      },
-    ],
+    // 4) Publish GitHub Release
+    '@semantic-release/github',
 
-    // 5) Publish GitHub Release + upload assets (CI only)
-    ...(isCI
-      ? [
-          [
-            '@semantic-release/github',
-            {
-              assets: [
-                {
-                  path: 'build/libs/*.jar',
-                  label: 'Spring Boot JAR (bootJar)',
-                },
-              ],
-            },
-          ],
-        ]
-      : []),
-
-    // 6) Commit CHANGELOG.md back to the repo
+    // 5) Commit CHANGELOG.md back to the repo
     [
       '@semantic-release/git',
       {
