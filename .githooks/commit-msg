@@ -50,9 +50,9 @@ fi
 # 1.5) Scope validation against .github/tags.yml
 # ---------------------------------------------------------------------
 #
-# Scopes are optional. When present, the scope must be in the canonical
-# vocabulary defined in .github/tags.yml — the same list used for docs
-# frontmatter tag validation.
+# Scopes are optional. When present, the scope must appear in the `both:`
+# or `scopes:` section of .github/tags.yml. The `docs:` section is
+# frontmatter-only and is not valid as a commit scope.
 #
 # The (release) scope is handled separately below (section 1.6).
 #
@@ -74,7 +74,7 @@ if [[ -n "$_commit_scope" && "$_commit_scope" != "release" && "${SKIP_SCOPE_CHEC
     _valid_scopes=()
     while IFS= read -r _scope_line; do
       _valid_scopes+=("$_scope_line")
-    done < <(awk '/^tags:/{p=1;next} /^[[:alpha:]]/{p=0} p && /^  - /{sub(/^  - /,""); print}' "$_tags_file")
+    done < <(awk '/^  (both|scopes):/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
 
     _scope_valid=0
     for _s in "${_valid_scopes[@]}"; do

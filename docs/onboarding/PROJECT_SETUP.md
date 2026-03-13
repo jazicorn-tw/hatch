@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-13
 status:       active
 tags:         [onboarding]
 description:  "How to build and run Hatch after cloning"
@@ -70,15 +70,22 @@ Tests use in-memory SQLite — no database server or Docker required.
 
 ## Common dev tasks
 
-| Command            | What it does                                           |
-| ------------------ | ------------------------------------------------------ |
-| `./dev format`     | Auto-format Go source with `gofmt`                     |
-| `./dev lint`       | Static analysis: `go vet` + `markdownlint-cli2`        |
-| `./dev test`       | Run `go test ./...`                                    |
-| `./dev verify`     | `doctor` + `lint` + `test` (am I ready to push?)       |
-| `./dev quality`    | `doctor` + `format` + `lint` + `test` (CI parity)      |
-| `./dev doctor`     | Validate local dev environment                         |
-| `./dev run`        | Load `.env` and start the application (`go run ./...`) |
+| Command              | What it does                                           |
+| -------------------- | ------------------------------------------------------ |
+| `./dev format`       | Auto-format Go source with `gofmt`                     |
+| `./dev lint`         | Static analysis: `go vet` + `markdownlint`             |
+| `./dev lint:docs`    | Lint markdown files only                               |
+| `./dev test`         | Run `go test ./...`                                    |
+| `./dev pre-commit`   | Pre-commit gate: `format` + `lint` + `test`            |
+| `./dev verify`       | `doctor` + `lint` + `test` (am I ready to push?)       |
+| `./dev quality`      | `doctor` + `format` + `lint` + `test` (CI parity)      |
+| `./dev doctor`       | Validate local dev environment                         |
+| `./dev bootstrap`    | First-time setup: `hooks` + `doctor` + `quality`       |
+| `./dev hooks`        | Install git hooks into `.git/hooks/`                   |
+| `./dev exec-bits`    | Check and fix executable bits on scripts and hooks     |
+| `./dev run`          | Load `.env` and start the application (`go run ./...`) |
+| `./dev test-ci`      | Run local-safe CI workflows via `act`                  |
+| `./dev changelog`    | Preview semantic-release changelog (dry-run)           |
 
 Run `./dev` with no arguments to open an interactive task picker.
 
@@ -109,7 +116,8 @@ This runs `doctor` + `lint` + `test` and exits 0 if everything is healthy.
 
 ## Related docs
 
-- [`docs/tooling/DEV.md`](tooling/DEV.md) — full `./dev` task reference
-- [`docs/tooling/DOCTOR.md`](tooling/DOCTOR.md) — what `doctor` checks
-- [`docs/tooling/BOOTSTRAP.md`](tooling/BOOTSTRAP.md) — bootstrap details
-- [`docs/commit/PRECOMMIT.md`](commit/PRECOMMIT.md) — pre-commit hook
+- [`docs/tooling/DEV.md`](../tooling/DEV.md) — full `./dev` task reference
+- [`docs/tooling/DOCTOR.md`](../tooling/DOCTOR.md) — what `doctor` checks
+- [`docs/tooling/BOOTSTRAP.md`](../tooling/BOOTSTRAP.md) — bootstrap details
+- [`docs/commit/PRECOMMIT.md`](../commit/PRECOMMIT.md) — pre-commit hook
+- [`docs/providers/CONFIGURATION.md`](../providers/CONFIGURATION.md) — config file and env vars

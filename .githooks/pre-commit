@@ -21,6 +21,13 @@ debug() {
     printf '%s\n' "pre-commit(debug): $*"
   fi
 }
+fail() {
+  local step="$1" rc="${2:-1}"
+  printf '\npre-commit: ✗ %s failed (exit %s)\n' "$step" "$rc" >&2
+  printf 'pre-commit: fix the issue above and re-run git commit.\n' >&2
+  printf 'pre-commit: tip: run DEBUG_PRECOMMIT=1 git commit for verbose output.\n' >&2
+  exit "$rc"
+}
 
 if [[ "${SKIP_QUALITY:-}" == "1" ]]; then
   log "pre-commit: SKIP_QUALITY=1 set; skipping quality gate."
@@ -63,19 +70,19 @@ debug "triggered by: $triggered_by"
 # --- Format ---
 if [[ "${AUTO_FORMAT:-1}" != "0" ]]; then
   log "pre-commit: formatting (./dev format)..."
-  ./dev format
+  ./dev format || fail "format (./dev format)" $?
 else
   log "pre-commit: AUTO_FORMAT=0 set; skipping format."
 fi
 
 # --- Lint ---
 log "pre-commit: linting (./dev lint)..."
-./dev lint
+./dev lint || fail "lint (./dev lint)" $?
 
 # --- Test ---
 if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
   log "pre-commit: testing (./dev test)..."
-  ./dev test
+  ./dev test || fail "test (./dev test)" $?
 else
   log "pre-commit: SKIP_TESTS=1 set; skipping tests."
 fi

@@ -2,10 +2,10 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
-status:       draft
-tags:         []
-description:  ""
+updated_date: 2026-03-13
+status:       active
+tags:         [onboarding, llm, providers, configuration, go]
+description:  "Overview, usage, configuration, and build instructions for hatch."
 -->
 # Hatch
 
@@ -33,15 +33,17 @@ required on the junior's end.
 
 ## Tech stack
 
-| Concern       | Choice                                                                  |
-| ------------- | ----------------------------------------------------------------------- |
-| Language      | Go                                                                      |
-| TUI           | Charmbracelet: Bubble Tea v2, Huh v2, Glamour v2, Bubbles, Lip Gloss    |
-| Vector store  | SQLite + sqlite-vec (WAL mode for concurrent SSH connections)           |
-| LLM           | Provider-agnostic — Anthropic, OpenAI, Ollama                           |
-| Embeddings    | Provider-agnostic — same providers                                      |
-| SSH server    | Charmbracelet Wish — per-connection Bubble Tea session                  |
-| Web dashboard | React + Vite + TypeScript; Go `net/http` REST API; embedded in binary   |
+| Concern       | Choice                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| Language      | Go                                                                    |
+| TUI           | Charmbracelet: Bubble Tea v2, Huh v2, Glamour v2, Bubbles, Lip Gloss  |
+| Vector store  | SQLite (WAL mode for concurrent SSH connections)                      |
+| LLM           | Provider-agnostic — Anthropic (default), OpenAI, Ollama               |
+| Embeddings    | Provider-agnostic — Ollama (default), OpenAI                          |
+| SSH server    | Charmbracelet Wish — per-connection Bubble Tea session                |
+| Web dashboard | React + Vite + TypeScript; Go `net/http` REST API; embedded in binary |
+
+See [`docs/providers/PROVIDERS.md`](docs/providers/PROVIDERS.md) for provider configuration details.
 
 ---
 
@@ -117,30 +119,29 @@ hatch search --source=my-project "middleware"
 hatch config init   # creates ~/.hatch/config.yaml
 ```
 
-Key config options:
+Key config options (`~/.hatch/config.yaml`, where `~` is your home directory — e.g. `/Users/yourname`):
 
 ```yaml
-llm:
-  provider: anthropic          # anthropic | openai | ollama
-  model: claude-sonnet-4-6
-
-embeddings:
-  provider: openai
-  model: text-embedding-3-small
-
-server:
-  ssh:
-    port: 2222
-  http:
-    port: 8080
+llm_provider:   anthropic        # anthropic | openai | ollama
+embed_provider: ollama           # ollama | openai
+ssh_port:       2222
+http_port:      8080
+web_password:   changeme
+jwt_secret:     ""
+db_path:        ~/.hatch/hatch.db
 ```
 
-Environment variables:
+Any key can be overridden with a `HATCH_<KEY>` environment variable:
 
-| Variable            | Purpose                                                |
-| ------------------- | ------------------------------------------------------ |
-| `HATCH_JWT_SECRET`  | Signs JWT tokens for SSH + web auth                    |
-| `HATCH_WEB_PASSWORD`| Web dashboard password (pre-JWT, deprecated in v1.0.0) |
+| Variable               | Purpose                                        |
+| ---------------------- | ---------------------------------------------- |
+| `HATCH_LLM_PROVIDER`   | LLM provider (`anthropic`, `openai`, `ollama`) |
+| `HATCH_EMBED_PROVIDER` | Embedding provider (`ollama`, `openai`)        |
+| `HATCH_SSH_PORT`       | SSH server port (default `2222`)               |
+| `HATCH_HTTP_PORT`      | Web dashboard port (default `8080`)            |
+| `HATCH_JWT_SECRET`     | Signs JWT tokens for SSH + web auth            |
+| `HATCH_WEB_PASSWORD`   | Web dashboard password                         |
+| `HATCH_DB_PATH`        | Path to the SQLite database file               |
 
 ---
 
@@ -164,6 +165,14 @@ go build ./...    # direct Go build
 
 ---
 
-## Roadmap
+## Docs
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full milestone plan.
+| Document                                                               | Description                                         |
+| ---------------------------------------------------------------------- | --------------------------------------------------- |
+| [`docs/providers/PROVIDERS.md`](docs/providers/PROVIDERS.md)           | LLM and embedding provider overview                 |
+| [`docs/providers/LLM.md`](docs/providers/LLM.md)                       | LLM providers and recommended models                |
+| [`docs/providers/EMBEDDINGS.md`](docs/providers/EMBEDDINGS.md)         | Embedding providers and recommended models          |
+| [`docs/providers/CONFIGURATION.md`](docs/providers/CONFIGURATION.md)   | Full config file and environment variable reference |
+| [`docs/TESTING.md`](docs/TESTING.md)                                   | Test coverage, test doubles, and how to run tests   |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md)                                   | Milestone plan                                      |
+| [`docs/devops/CI_VARIABLES.md`](docs/devops/CI_VARIABLES.md)           | CI gate variables                                   |

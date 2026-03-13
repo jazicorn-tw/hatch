@@ -204,16 +204,17 @@ if [[ ${#md_files[@]} -gt 0 ]]; then
 fi
 
 # ── Tag validation ────────────────────────────────────────────────────────────
-# Enforces the canonical tag vocabulary defined in .github/tags.yml [tags:].
+# Enforces the canonical tag vocabulary defined in .github/tags.yml.
+# Tags from both `both:` and `docs:` sections are valid for docs frontmatter.
 # Empty tags: [] is always valid. Hard-fails on unknown tags.
 if [[ ${#md_files[@]} -gt 0 ]]; then
   _TAGS_FILE="$REPO_ROOT/.github/tags.yml"
   _ALLOWED_TAGS=()
   if [[ -f "$_TAGS_FILE" ]]; then
-    # Parse the `tags:` section: collect `- value` lines until the next top-level key
+    # Parse `both:` and `docs:` sections — `commits:` is scope-only, not valid for frontmatter
     while IFS= read -r _line; do
       _ALLOWED_TAGS+=("$_line")
-    done < <(awk '/^tags:/{p=1;next} /^[[:alpha:]]/{p=0} p && /^  - /{sub(/^  - /,""); print}' "$_TAGS_FILE")
+    done < <(awk '/^  (both|docs):/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_TAGS_FILE")
   else
     printf '  ⚠️   validate-tags — .github/tags.yml not found, skipping\n'
   fi

@@ -157,7 +157,7 @@ case "$TASK" in
   format)
     header "format"
     if has_go_files; then
-      spin "Running gofmt..." gofmt -w ./...
+      spin "Running gofmt..." go fmt ./...
       log_done "format"
     else
       log_warn "no Go files found, skipping gofmt"

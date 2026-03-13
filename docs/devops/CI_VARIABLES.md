@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-12
+updated_date: 2026-03-13
 status:       active
 tags:         [devops, ci, config]
 description:  "GitHub Actions repository variables — what each controls and when to set it"
@@ -36,6 +36,19 @@ Set to `FALSE` **before Go source exists** to prevent CI from failing with
 
 Gates the `markdown-lint` job. Disable temporarily if markdownlint is being
 configured or if bulk doc changes are in progress.
+
+---
+
+## Frontmatter tag validation
+
+| Variable            | Type     | Default | Values          |
+| ------------------- | -------- | ------- | --------------- |
+| `ENABLE_DOCS_TAGS`  | Variable | enabled | `FALSE` / unset |
+
+Gates the `docs-tags` job in CI, which validates that all `docs/**/*.md`
+frontmatter tags appear in the canonical vocabulary defined in
+`.github/tags.yml`. Disable temporarily when adding new tags to `tags.yml`
+before the updated list is merged.
 
 ---
 

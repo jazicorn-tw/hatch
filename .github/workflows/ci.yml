@@ -97,3 +97,16 @@ jobs:
 
       - name: Lint markdown files
         run: yarn markdownlint-cli2 '**/*.md' '#node_modules'
+
+  # ── Frontmatter tag validation ─────────────────────────────────────────────
+  docs-tags:
+    name: Validate frontmatter tags
+    runs-on: ubuntu-latest
+    if: ${{ vars.ENABLE_DOCS_TAGS != 'FALSE' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docs frontmatter tags
+        run: bash scripts/ci/validate-frontmatter-tags.sh

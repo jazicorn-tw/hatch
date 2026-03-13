@@ -1,43 +1,63 @@
-# Unified taxonomy — one canonical list for docs frontmatter tags and
-# conventional commit scopes.
+# Unified taxonomy for docs frontmatter tags and conventional commit scopes.
 #
-# Every value here serves double duty:
-#   1. Valid tag in docs/ frontmatter  (tags: [ci, tooling, ...])
-#   2. Valid scope in commit messages  (feat(ci): ..., fix(tooling): ...)
+# both:     valid as docs frontmatter tag AND as a conventional commit scope
+#             feat(ci): ...   fix(tooling): ...   tags: [ci, tooling, ...]
+#
+# scopes:   valid as a conventional commit scope ONLY — not a docs frontmatter tag
+#             chore(deps): ...
+#
+# docs:     valid as docs frontmatter tag ONLY — not a valid commit scope
+#             tags: [architecture, foundation, go]
 #
 # Enforced by:
-#   - pre-add hook      → docs/ frontmatter tags
-#   - commit-msg hook   → conventional commit scopes
+#   - pre-add hook      → docs/ frontmatter tags (both + docs)
+#   - commit-msg hook   → conventional commit scopes (both + scopes)
 
 tags:
-  - adr
-  - act
-  - actions
-  - api
-  - build
-  - ci
-  - commit
-  - config
-  - db
-  - deps
-  - deploy
-  - dev
-  - devops
-  - dx
-  - env
-  - errors
-  - faq
-  - hooks
-  - local
-  - onboarding
-  - phases
-  - planning
-  - qa
-  - release
-  - reports
-  - runtime
-  - security
-  - template
-  - test
-  - tooling
-  - ux
+  both:
+    - act
+    - actions
+    - adr
+    - agent
+    - api
+    - build
+    - chunker
+    - ci
+    - commit
+    - config
+    - db
+    - deploy
+    - dev
+    - devops
+    - dx
+    - embedder
+    - env
+    - errors
+    - faq
+    - hooks
+    - llm
+    - local
+    - onboarding
+    - planning
+    - providers
+    - qa
+    - release
+    - runtime
+    - security
+    - source
+    - store
+    - test
+    - tooling
+    - ux
+  scopes:
+    - deps
+  docs:
+    - architecture
+    - configuration
+    - embeddings
+    - foundation
+    - go
+    - milestone
+    - phases
+    - reports
+    - template

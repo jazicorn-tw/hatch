@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-12
+updated_date: 2026-03-13
 status:       active
 tags:         [planning]
 description:  "Hatch development roadmap — versioned milestones"
@@ -40,12 +40,12 @@ Single binary, local ingestion, full TUI quiz loop
 
 ### Milestone 1 — Foundation
 
-- [ ] Scaffold all `cmd/hatch/` and `internal/` packages
-- [ ] Config layer: Viper + `~/.hatch/config.yaml`, env var overrides, `hatch config init`
-- [ ] Core interfaces: `Source`, `Chunker`, `Embedder`, `LLM`, `Store`, `Agent`
-- [ ] SQLite schema + migration runner; WAL mode on open
-- [ ] In-memory store (`internal/store/memory/`) for tests
-- [ ] Fake embedder + fake LLM for tests
+- [x] Scaffold all `cmd/hatch/` and `internal/` packages
+- [x] Config layer: Viper + `~/.hatch/config.yaml`, env var overrides, `hatch config init`
+- [x] Core interfaces: `Source`, `Chunker`, `Embedder`, `LLM`, `Store`, `Agent`
+- [x] SQLite schema + migration runner; WAL mode on open
+- [x] In-memory store (`internal/store/memory/`) for tests
+- [x] Fake embedder + fake LLM for tests
 
 ### Milestone 2 — Ingestion Pipeline
 
