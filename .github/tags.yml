@@ -57,6 +57,8 @@ tags:
     - deps
   docs:
     - architecture
+    - bubble-tea
+    - concurrency
     - configuration
     - fakes
     - foundation
@@ -64,4 +66,6 @@ tags:
     - milestone
     - phases
     - reports
+    - sqlite
     - template
+    - tui
