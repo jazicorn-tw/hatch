@@ -4,24 +4,82 @@ name: Publish
 # Kept separate from release.yml to avoid needs-chain skip issues — when
 # triggered by a tag push, release.yml's release job is skipped, which
 # caused the publish job inside release.yml to be skipped as well.
+#
+# Job order:  gate → validate-helm → docker → helm-push
+#
+# If validate-helm fails (lint error, package error), docker is skipped and
+# nothing is published. If docker fails, helm-push is skipped. This ensures
+# both artifacts are published together or not at all.
 
 on:
   push:
     tags: [ 'v*.*.*' ]
 
 jobs:
+  # ── Gate ─────────────────────────────────────────────────────────────────────
+  # Fails fast if either publish flag is disabled, skipping all downstream jobs.
+  gate:
+    name: Check publish conditions
+    runs-on: ubuntu-latest
+
+    if: github.repository == vars.CANONICAL_REPOSITORY
+
+    steps:
+      - name: Validate publish flags
+        run: |
+          set -euo pipefail
+          ok=true
+          if [[ "${{ vars.PUBLISH_DOCKER_IMAGE }}" != "TRUE" ]]; then
+            echo "::warning::PUBLISH_DOCKER_IMAGE is not TRUE"
+            ok=false
+          fi
+          if [[ "${{ vars.PUBLISH_HELM_CHART }}" != "TRUE" ]]; then
+            echo "::warning::PUBLISH_HELM_CHART is not TRUE"
+            ok=false
+          fi
+          if [[ "$ok" == "false" ]]; then
+            echo "One or more publish flags are disabled — skipping both Docker and Helm"
+            exit 1
+          fi
+
+  # ── Validate Helm ────────────────────────────────────────────────────────────
+  # Lints and dry-run packages the Helm chart before Docker is built.
+  # If this fails, Docker is never run and nothing is published.
+  validate-helm:
+    name: Validate Helm chart
+    runs-on: ubuntu-latest
+    needs: gate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+        with:
+          version: v3.14.4
+
+      - name: Lint Helm chart
+        run: helm lint helm/app
+
+      - name: Dry-run package Helm chart
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          helm package helm/app \
+            --version "$VERSION" \
+            --app-version "$VERSION"
+
   # ── Docker ──────────────────────────────────────────────────────────────────
   docker:
     name: Publish Docker image
     runs-on: ubuntu-latest
+    needs: [gate, validate-helm]
 
     permissions:
       contents: read
       packages: write
-
-    if: >-
-      github.repository == vars.CANONICAL_REPOSITORY &&
-      vars.PUBLISH_DOCKER_IMAGE == 'TRUE'
 
     steps:
       - name: Checkout repository
@@ -66,18 +124,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Helm ────────────────────────────────────────────────────────────────────
+  # ── Helm push ────────────────────────────────────────────────────────────────
   helm:
     name: Publish Helm chart
     runs-on: ubuntu-latest
+    needs: [gate, validate-helm, docker]
 
     permissions:
       contents: read
       packages: write
-
-    if: >-
-      github.repository == vars.CANONICAL_REPOSITORY &&
-      vars.PUBLISH_HELM_CHART == 'TRUE'
 
     steps:
       - name: Checkout repository
