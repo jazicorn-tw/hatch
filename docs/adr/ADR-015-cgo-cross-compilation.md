@@ -1,0 +1,125 @@
+<!--
+created_by:   jazicorn-tw
+created_date: 2026-03-14
+updated_by:   jazicorn-tw
+updated_date: 2026-03-14
+status:       active
+tags:         [adr, build, ci, deploy]
+description:  "ADR-015: CGO cross-compilation strategy for Docker multi-platform builds using tonistiigi/xx"
+-->
+# ADR-015: CGO cross-compilation for Docker multi-platform builds
+
+- **Status:** Accepted
+- **Date:** 2026-03-14
+- **Deciders:** Project maintainers
+- **Scope:** `Dockerfile`, `.github/workflows/` image publish job
+
+---
+
+## Context
+
+M2 replaced `modernc.org/sqlite` (pure Go, no CGO) with `mattn/go-sqlite3` (CGO) to
+gain access to the `sqlite-vec` extension for KNN vector search. This broke the Docker
+image publish pipeline: the Dockerfile was building with `CGO_ENABLED=0`, which excluded
+all Go files in `sqlite-vec-go-bindings/cgo` and produced a build error.
+
+Two additional constraints apply:
+
+1. **Static linking required** — the final image uses `gcr.io/distroless/static-debian12`
+   which has no C runtime. CGO-linked binaries must be statically linked
+   (`-extldflags="-static"`) or they will crash at startup.
+
+2. **Multi-platform builds** — the publish job builds `linux/amd64` and `linux/arm64`.
+   The original Dockerfile used `--platform=$BUILDPLATFORM` on the builder stage to avoid
+   QEMU emulation, but CGO cross-compilation requires a target-aware C toolchain — not
+   just the host's `gcc`.
+
+---
+
+## Decision
+
+Use **[tonistiigi/xx](https://github.com/tonistiigi/xx)** as a cross-compilation helper
+in the Dockerfile builder stage.
+
+```dockerfile
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+
+COPY --from=xx /usr/local/bin/xx-* /usr/local/bin/
+
+ARG TARGETPLATFORM
+RUN apk add --no-cache clang lld
+RUN xx-apk add --no-cache musl-dev gcc
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY cmd/ cmd/
+COPY internal/ internal/
+RUN CGO_ENABLED=1 xx-go build \
+    -ldflags="-s -w -extldflags=-static" -trimpath -o /hatch ./cmd/hatch/ && \
+    xx-verify --static /hatch
+```
+
+`xx-go` automatically sets `GOOS`, `GOARCH`, and `CC` for `$TARGETPLATFORM`. `xx-apk`
+installs the target-specific sysroot and cross-compiler. The builder stage itself runs
+natively on `$BUILDPLATFORM` — no QEMU emulation required.
+
+`xx-verify --static /hatch` fails the build if the binary is not fully statically
+linked, catching linkage errors before the image is pushed.
+
+---
+
+## Alternatives Considered
+
+### 1. `CGO_ENABLED=0` — keep the original approach
+
+Would work only if `sqlite-vec-go-bindings/cgo` were replaced with a pure-Go alternative.
+No production-ready pure-Go alternative to sqlite-vec exists today.
+
+**Rejected** — requires replacing a core dependency.
+
+### 2. `CGO_ENABLED=1` without xx, QEMU for arm64
+
+Remove `--platform=$BUILDPLATFORM`, install `gcc musl-dev`, and let the arm64 build run
+under QEMU emulation on the amd64 GitHub Actions runner.
+
+**Rejected** — arm64 builds under QEMU take 5–10× longer than native. Acceptable short-
+term but poor developer experience at scale.
+
+### 3. Separate `linux/amd64`-only image
+
+Drop `linux/arm64` from the publish matrix.
+
+**Rejected** — arm64 (Apple Silicon, AWS Graviton) is a first-class target. Dropping it
+would block deployment on common VPS configurations.
+
+### 4. Replace `distroless/static` with `alpine` runtime image
+
+Use `alpine:latest` as the final stage — libc is present, no need for static linking.
+
+**Rejected** — `distroless/static` has a significantly smaller attack surface (no shell,
+no package manager). The security properties are worth the static-linking constraint.
+
+---
+
+## Consequences
+
+### Positive
+
+- Multi-platform builds (`linux/amd64`, `linux/arm64`) remain fast — no QEMU
+- `xx-verify --static` provides a hard gate: a non-static binary cannot be pushed
+- Builder stage stays on native platform — `go mod download` and compile are fast
+- Pattern is reusable for any future CGO dependency
+
+### Negative
+
+- `tonistiigi/xx` is an additional image dependency in the build pipeline — pinning
+  to a digest is recommended for reproducibility and supply-chain security
+- `clang lld` are heavier than `gcc` alone; build layer is slightly larger
+- Cross-compilation with CGO is more complex to debug than pure-Go builds
+
+### Follow-up
+
+`tonistiigi/xx` is pinned to digest `sha256:c64defb9ed5a91eacb37f96ccc3d4cd72521c4bd18d5442905b95e2226b0e707`
+(latest as of 2026-03-14). Update the digest when upgrading xx.
