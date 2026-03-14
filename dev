@@ -39,75 +39,21 @@ set -euo pipefail
 #   AUTO_FORMAT=0 ./dev pre-commit   skip format step
 #   SKIP_TESTS=1  ./dev pre-commit   skip test step
 
-# ── Gum availability ──────────────────────────────────────────────────────────
+# ── Load task modules ─────────────────────────────────────────────────────────
 
-# go install puts binaries in $GOPATH/bin which may not be in $PATH yet.
-# Resolve gum from PATH first, then fall back to $(go env GOPATH)/bin/gum.
-GUM="gum"
-if ! command -v gum >/dev/null 2>&1; then
-  _gopath_gum="$(go env GOPATH 2>/dev/null)/bin/gum"
-  if [[ -x "$_gopath_gum" ]]; then
-    GUM="$_gopath_gum"
-  else
-    echo "❌ gum is required but not installed."
-    echo "   go install github.com/charmbracelet/gum@latest"
-    echo "   Then add \$(go env GOPATH)/bin to your PATH:"
-    echo "   export PATH=\"\$PATH:\$(go env GOPATH)/bin\""
-    exit 1
-  fi
-fi
+_DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.dev"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-log_info()  { $GUM log --level info  "$*"; }
-log_warn()  { $GUM log --level warn  "$*"; }
-log_error() { $GUM log --level error "$*"; }
-log_done()  { $GUM log --level info  "$* ✓"; }
-
-# Show a spinner while a command runs; print captured output only on failure.
-# TTY: run command in background, spin on its PID, print output if it fails.
-# Non-TTY (CI / git hooks): run directly so output flows through.
-spin() {
-  local title="$1"; shift
-  if [[ -t 1 ]]; then
-    local _out _rc=0
-    _out=$(mktemp)
-    # Start the real command in background, capturing all output
-    "$@" >"$_out" 2>&1 &
-    local _pid=$!
-    # Show spinner while the background job is alive
-    $GUM spin --spinner dot --title "$title" -- \
-      bash -c "while kill -0 ${_pid} 2>/dev/null; do sleep 0.05; done" || true
-    # Collect the exit code
-    wait "$_pid" || _rc=$?
-    # Only print output on failure
-    if [[ $_rc -ne 0 ]]; then
-      cat "$_out" >&2
-    fi
-    rm -f "$_out"
-    return $_rc
-  else
-    "$@"
-  fi
-}
-
-has_go_files() {
-  find . -name '*.go' -not -path './vendor/*' 2>/dev/null | head -1 | grep -q .
-}
-
-header() {
-  $GUM style \
-    --foreground 99 \
-    --bold \
-    "▶ $*"
-}
-
-env_check() {
-  if [ ! -f .env ]; then
-    log_error ".env not found — run: ./dev env init"
-    exit 1
-  fi
-}
+source "$_DEV_DIR/helpers.sh"
+source "$_DEV_DIR/go.sh"
+source "$_DEV_DIR/lint.sh"
+source "$_DEV_DIR/quality.sh"
+source "$_DEV_DIR/infra.sh"
+source "$_DEV_DIR/env.sh"
+source "$_DEV_DIR/docker.sh"
+source "$_DEV_DIR/ci.sh"
+source "$_DEV_DIR/release.sh"
+source "$_DEV_DIR/clean.sh"
+source "$_DEV_DIR/tags.sh"
 
 # ── Task resolution ───────────────────────────────────────────────────────────
 
@@ -151,320 +97,38 @@ if [[ -z "$TASK" ]]; then
   TASK="${TASK/ /:}"
 fi
 
-# ── Tasks ─────────────────────────────────────────────────────────────────────
+# ── Dispatch ──────────────────────────────────────────────────────────────────
 
 case "$TASK" in
-
-  # ── Format ──────────────────────────────────────────────────────────────────
-  format)
-    header "format"
-    if has_go_files; then
-      spin "Running gofmt..." go fmt ./...
-      log_done "format"
-    else
-      log_warn "no Go files found, skipping gofmt"
-    fi
-    ;;
-
-  # ── Lint ────────────────────────────────────────────────────────────────────
-  lint)
-    header "lint"
-    "$0" lint:docs
-    if has_go_files; then
-      spin "Running go vet..." go vet ./...
-      log_done "lint"
-    else
-      log_warn "no Go files found, skipping go vet"
-    fi
-    ;;
-
-  lint:docs)
-    spin "Running markdownlint..." \
-      ./node_modules/.bin/markdownlint-cli2 '**/*.md' '#node_modules'
-    log_done "lint:docs"
-    ;;
-
-  # ── Test ────────────────────────────────────────────────────────────────────
-  test)
-    header "test"
-    if has_go_files; then
-      spin "Running go test..." go test ./...
-      log_done "test"
-    else
-      log_warn "no Go files found, skipping go test"
-    fi
-    ;;
-
-  # ── Verify ──────────────────────────────────────────────────────────────────
-  verify)
-    header "verify"
-    "$0" doctor
-    "$0" lint
-    "$0" test
-    log_done "verify"
-    ;;
-
-  # ── Quality ─────────────────────────────────────────────────────────────────
-  quality)
-    header "quality"
-    "$0" doctor
-    "$0" format
-    "$0" lint
-    "$0" test
-    log_done "quality gate passed"
-    ;;
-
-  # ── Pre-commit ──────────────────────────────────────────────────────────────
-  pre-commit)
-    header "pre-commit"
-    if [[ "${AUTO_FORMAT:-1}" != "0" ]]; then
-      "$0" format
-    else
-      log_warn "AUTO_FORMAT=0 set, skipping format"
-    fi
-    "$0" lint
-    if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
-      "$0" test
-    else
-      log_warn "SKIP_TESTS=1 set, skipping tests"
-    fi
-    log_done "pre-commit"
-    ;;
-
-  # ── Bootstrap ───────────────────────────────────────────────────────────────
-  bootstrap)
-    header "bootstrap"
-    "$0" hooks
-    "$0" doctor
-    "$0" quality
-    log_done "bootstrap"
-    ;;
-
-  # ── Doctor ──────────────────────────────────────────────────────────────────
-  doctor)
-    header "doctor"
-    spin "Checking environment..." ./scripts/doctor.sh
-    log_done "doctor"
-    ;;
-
-  # ── Hooks ───────────────────────────────────────────────────────────────────
-  hooks)
-    header "hooks"
-    ./scripts/bootstrap/install-hooks.sh
-    log_done "hooks"
-    ;;
-
-  # ── Exec-bits ───────────────────────────────────────────────────────────────
-  exec-bits)
-    header "exec-bits"
-    spin "Checking executable bits..." ./scripts/check/check-executable-bits.sh
-    log_done "exec-bits"
-    ;;
-
-  # ── Run ─────────────────────────────────────────────────────────────────────
-  run)
-    header "run"
-    env_check
-    set -a; source .env; set +a
-    go run ./...
-    ;;
-
-  # ── Env ─────────────────────────────────────────────────────────────────────
-  env:up)
-    header "env up"
-    # Detect a stale Colima state that would cause a disk-lock failure on start.
-    # This happens when a previous VM crashed without a clean shutdown:
-    #   1. Orphaned colima/limactl processes still holding the disk
-    #   2. A stale Lima in_use_by symlink that was never cleaned up
-    _stale_pids=$(pgrep -d ' ' -x 'colima' 2>/dev/null || true)
-    _stale_pids+=" $(pgrep -d ' ' -x 'limactl' 2>/dev/null || true)"
-    _stale_pids="${_stale_pids// /}"   # collapse spaces
-    _disk_lock="${HOME}/.colima/_lima/_disks/colima/in_use_by"
-    _stale=false
-    [[ -n "$_stale_pids" ]] && _stale=true
-    [[ -L "$_disk_lock" ]]  && _stale=true
-    if [[ "$_stale" == true ]] && ! colima status >/dev/null 2>&1; then
-      [[ -n "$_stale_pids" ]] && \
-        $GUM log --level warn "stale processes: ${_stale_pids// /,}"
-      [[ -L "$_disk_lock" ]] && \
-        $GUM log --level warn "stale disk lock: ${_disk_lock}"
-      if $GUM confirm "Clean up stale Colima state and continue?"; then
-        [[ -n "$_stale_pids" ]] && { kill ${_stale_pids} 2>/dev/null || true; sleep 1; }
-        [[ -L "$_disk_lock" ]] && rm -f "$_disk_lock"
-        $GUM log --level info "stale state cleared"
-      else
-        $GUM log --level error "aborting — stale state left in place"
-        exit 1
-      fi
-    fi
-    ./scripts/dev/start-dev.sh
-    ;;
-
-  env:down)
-    header "env down"
-    ./scripts/dev/stop-dev.sh
-    ;;
-
-  env:status)
-    header "env status"
-    echo "docker context: $(docker context show 2>/dev/null || echo 'n/a')"
-    colima status 2>/dev/null || true
-    docker ps 2>/dev/null | head -n 15 || true
-    ;;
-
-  env:init)
-    header "env init"
-    ./scripts/bootstrap/init-env.sh
-    ;;
-
-  # ── Docker ──────────────────────────────────────────────────────────────────
-  docker:up)
-    header "docker up"
-    spin "Starting Docker Compose..." docker compose up -d
-    log_done "docker up"
-    ;;
-
-  docker:down)
-    header "docker down"
-    spin "Stopping Docker Compose..." docker compose down
-    log_done "docker down"
-    ;;
-
-  docker:reset)
-    header "docker reset"
-    $GUM confirm "Reset Docker Compose? This will delete volumes." || exit 0
-    spin "Resetting Docker Compose..." bash -c "docker compose down -v && docker compose up -d"
-    log_done "docker reset"
-    ;;
-
-  # ── Test CI ─────────────────────────────────────────────────────────────────
-  test-ci|test-ci:*)
-    header "test-ci"
-    if ! command -v act >/dev/null 2>&1; then
-      log_error "act is required: brew install act"
-      exit 1
-    fi
-    # Strip prefix: "test-ci:ci" → "ci", bare "test-ci" → "test-ci" (sentinel)
-    _tc_workflow="${TASK#test-ci:}"
-    # Optional job override via env: ACT_JOB=test ./dev test-ci ci
-    _tc_job="${ACT_JOB:-}"
-
-    # ── Resolve Docker socket ──────────────────────────────────────────────────
-    # act bind-mounts the socket into runner containers. Must be at a path the
-    # host daemon can resolve — /var/run/docker.sock works; Colima's socket path
-    # inside ~/.colima does not (macOS can't bind-mount VM-internal paths).
-    _std_sock="/var/run/docker.sock"
-    _colima_sock="${HOME}/.colima/default/docker.sock"
-    if [[ -n "${DOCKER_HOST:-}" ]]; then
-      _tc_docker_sock="$DOCKER_HOST"
-    elif [[ -S "$_std_sock" ]]; then
-      _tc_docker_sock="unix://${_std_sock}"
-    elif [[ -S "$_colima_sock" ]]; then
-      $GUM log --level warn "/var/run/docker.sock not found — act cannot mount the Colima socket into containers"
-      $GUM log --level warn "Fix: sudo ln -sf ${_colima_sock} ${_std_sock}"
-      if $GUM confirm "Create symlink now? (requires sudo)"; then
-        sudo ln -sf "$_colima_sock" "$_std_sock"
-        $GUM log --level info "symlink created: ${_std_sock} → ${_colima_sock}"
-        _tc_docker_sock="unix://${_std_sock}"
-      else
-        $GUM log --level warn "continuing without socket mount — Docker-in-Docker steps will fail"
-        _tc_docker_sock=""
-      fi
-    else
-      _tc_docker_sock=""
-    fi
-    [[ -n "$_tc_docker_sock" ]] && $GUM log --level info "docker socket: ${_tc_docker_sock}"
-
-    # ── Build base act args ────────────────────────────────────────────────────
-    _tc_base_args=(
-      --env ACT=true
-      --container-architecture linux/amd64
-      --container-options "--privileged"
-    )
-    [[ -n "$_tc_job" ]] && _tc_base_args+=(-j "$_tc_job")
-    [[ -f .env ]]       && _tc_base_args+=(--secret-file .env)
-    [[ -f .vars ]]      && _tc_base_args+=(--var-file .vars)
-
-    # ── Run workflows ──────────────────────────────────────────────────────────
-    if [[ "$_tc_workflow" == "test-ci" ]]; then
-      # No argument — run local-safe workflows only.
-      # release.yml and publish.yml require Docker-in-Docker (DinD) which does
-      # not work on macOS + Colima. Push a branch to test those on GitHub.
-      _tc_local=(ci doctor changelog-guard)
-      $GUM log --level info "local workflows: ${_tc_local[*]}${_tc_job:+  job: ${_tc_job}}"
-      for _wf in "${_tc_local[@]}"; do
-        $GUM log --level info "── ${_wf}"
-        DOCKER_HOST="${_tc_docker_sock:-}" act "${_tc_base_args[@]}" -W ".github/workflows/${_wf}.yml"
-      done
-    else
-      # Specific workflow: ./dev test-ci release → release.yml
-      $GUM log --level info "workflow: ${_tc_workflow}${_tc_job:+  job: ${_tc_job}}"
-      DOCKER_HOST="${_tc_docker_sock:-}" act "${_tc_base_args[@]}" -W ".github/workflows/${_tc_workflow}.yml"
-    fi
-    log_done "test-ci"
-    ;;
-
-  # ── Changelog ────────────────────────────────────────────────────────────────
-  changelog)
-    header "changelog"
-    if [[ ! -f node_modules/.bin/semantic-release ]]; then
-      log_error "semantic-release not installed — run: yarn install"
-      exit 1
-    fi
-    $GUM log --level info "dry-run — no release will be created"
-    npx semantic-release --dry-run --no-ci
-    log_done "changelog"
-    ;;
-
-  # ── Clean ───────────────────────────────────────────────────────────────────
-  clean:local)
-    header "clean local"
-    $GUM confirm "Clean local build artifacts?" || exit 0
-    ./scripts/cache/clean-local.sh
-    log_done "clean local"
-    ;;
-
-  clean:docker)
-    header "clean docker"
-    $GUM confirm "Clean Docker build cache?" || exit 0
-    ./scripts/cache/cache-docker.sh
-    log_done "clean docker"
-    ;;
-
-  clean:colima)
-    header "clean colima"
-    $GUM confirm "Reset Colima? This will delete all containers and volumes." || exit 0
-    ./scripts/cache/clean-colima.sh
-    log_done "clean colima"
-    ;;
-
-  # ── Tags ────────────────────────────────────────────────────────────────────
-  tags)
-    header "tags"
-    _tags_file=".github/tags.yml"
-    if [[ ! -f "$_tags_file" ]]; then
-      log_error "tags file not found: $_tags_file"
-      exit 1
-    fi
-    _both=$(awk '/^  both:/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
-    _docs=$(awk '/^  docs:/{p=1;next}  p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
-    _scopes=$(awk '/^  scopes:/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
-    $GUM style --bold "both  (frontmatter + commit scope)"
-    $GUM style --foreground 99 "$(printf '%s\n' $_both | paste - - - - - | column -t)"
-    echo ""
-    $GUM style --bold "docs  (frontmatter only)"
-    $GUM style --foreground 99 "$(printf '%s\n' $_docs | paste - - - - - | column -t)"
-    echo ""
-    $GUM style --bold "scopes  (commit scope only)"
-    $GUM style --foreground 99 "$(printf '%s\n' $_scopes)"
-    ;;
-
-  # ── Unknown ─────────────────────────────────────────────────────────────────
+  format)            run_format ;;
+  lint)              run_lint ;;
+  lint:docs)         run_lint_docs ;;
+  test)              run_test ;;
+  verify)            run_verify ;;
+  quality)           run_quality ;;
+  pre-commit)        run_pre_commit ;;
+  bootstrap)         run_bootstrap ;;
+  doctor)            run_doctor ;;
+  hooks)             run_hooks ;;
+  exec-bits)         run_exec_bits ;;
+  run)               run_run ;;
+  env:up)            run_env_up ;;
+  env:down)          run_env_down ;;
+  env:status)        run_env_status ;;
+  env:init)          run_env_init ;;
+  docker:up)         run_docker_up ;;
+  docker:down)       run_docker_down ;;
+  docker:reset)      run_docker_reset ;;
+  test-ci|test-ci:*) run_test_ci "${TASK#test-ci:}" ;;
+  changelog)         run_changelog ;;
+  clean:local)       run_clean_local ;;
+  clean:docker)      run_clean_docker ;;
+  clean:colima)      run_clean_colima ;;
+  tags)              run_tags ;;
   *)
     log_error "unknown task: $TASK"
     echo ""
     echo "Run './dev' with no arguments for an interactive menu."
     exit 1
     ;;
-
 esac

@@ -186,7 +186,7 @@ Uses the Google Generative AI Embeddings API. Requires a Google Cloud account an
 | ------------------ | ------ | --------- |
 | Fake (test double) | ✅     | M1        |
 | OpenAI             | ✅     | M2        |
-| Google Gemini      | 🔲     | M3        |
+| Google Gemini      | ✅     | M2        |
 | Ollama             | 🔲     | v4        |
 
 ---

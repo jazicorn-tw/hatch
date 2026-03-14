@@ -14,6 +14,8 @@ import (
 	codechunker "github.com/jazicorn/hatch/internal/chunker/code"
 	mdchunker "github.com/jazicorn/hatch/internal/chunker/markdown"
 	"github.com/jazicorn/hatch/internal/config"
+	"github.com/jazicorn/hatch/internal/embedder"
+	gemiembed "github.com/jazicorn/hatch/internal/embedder/gemini"
 	oaiembed "github.com/jazicorn/hatch/internal/embedder/openai"
 	"github.com/jazicorn/hatch/internal/pipeline"
 	"github.com/jazicorn/hatch/internal/source"
@@ -56,11 +58,7 @@ func runIngest(ctx context.Context, sourceName string) error {
 		return fmt.Errorf("ingest: create source: %w", err)
 	}
 
-	apiKey := cfg.OpenAIAPIKey
-	if apiKey == "" {
-		apiKey = os.Getenv("OPENAI_API_KEY")
-	}
-	emb, err := oaiembed.New(oaiembed.Config{APIKey: apiKey})
+	emb, err := newEmbedder(cfg)
 	if err != nil {
 		return fmt.Errorf("ingest: create embedder: %w", err)
 	}
@@ -110,6 +108,24 @@ func resolvePath(path string) (string, error) {
 		return "", fmt.Errorf("get working dir: %w", err)
 	}
 	return filepath.Join(wd, path), nil
+}
+
+// newEmbedder constructs the appropriate embedder based on cfg.EmbedProvider.
+func newEmbedder(cfg *config.Config) (embedder.Embedder, error) {
+	switch cfg.EmbedProvider {
+	case "gemini":
+		apiKey := cfg.GoogleAPIKey
+		if apiKey == "" {
+			apiKey = os.Getenv("GOOGLE_API_KEY")
+		}
+		return gemiembed.New(gemiembed.Config{APIKey: apiKey})
+	default: // "openai" and unset
+		apiKey := cfg.OpenAIAPIKey
+		if apiKey == "" {
+			apiKey = os.Getenv("OPENAI_API_KEY")
+		}
+		return oaiembed.New(oaiembed.Config{APIKey: apiKey})
+	}
 }
 
 // drainProgressBar starts a goroutine that updates a progress bar from ch.

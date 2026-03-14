@@ -178,7 +178,7 @@ embed_provider: gemini
 | Fake (test double) | ✅  | ✅       | M1        |
 | OpenAI             | 🔲  | ✅       | M2 / M3   |
 | Anthropic          | 🔲  | —        | M3        |
-| Google Gemini      | 🔲  | 🔲       | M3        |
+| Google Gemini      | 🔲  | ✅       | M2 / M3   |
 | Ollama             | 🔲  | 🔲       | v4        |
 
 ---
