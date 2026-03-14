@@ -12,7 +12,9 @@ FROM --platform=$BUILDPLATFORM tonistiigi/xx@sha256:c64defb9ed5a91eacb37f96ccc3d
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 # Copy xx helpers into the builder.
-COPY --from=xx /usr/local/bin/xx-* /usr/local/bin/
+# COPY --from=xx / / is the canonical pattern — xx is built FROM scratch and
+# globbing /usr/local/bin/xx-* fails in BuildKit on scratch-based images.
+COPY --from=xx / /
 
 ARG TARGETPLATFORM
 
