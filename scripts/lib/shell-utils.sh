@@ -48,6 +48,53 @@ have() {
   command -v "$cmd" >/dev/null 2>&1
 }
 
+# setup_colors — sets ANSI color variables in the caller's scope.
+# No-ops cleanly when stdout is not a terminal.
+# Variables set: RESET BOLD DIM YELLOW CYAN GREEN RED
+setup_colors() {
+  if [[ -t 1 ]]; then
+    RESET=$'\033[0m'
+    BOLD=$'\033[1m'
+    DIM=$'\033[2m'
+    YELLOW=$'\033[1;33m'
+    CYAN=$'\033[1;36m'
+    GREEN=$'\033[1;32m'
+    RED=$'\033[1;31m'
+  else
+    RESET="" BOLD="" DIM="" YELLOW="" CYAN="" GREEN="" RED=""
+  fi
+}
+
+# has_interactive_tty — returns 0 if /dev/tty can actually be opened, 1 otherwise.
+# Performs a functional open (not just a permission check) so that a "Device not
+# configured" /dev/tty is correctly treated as unavailable.
+has_interactive_tty() { { true </dev/tty; } 2>/dev/null; }
+
+# is_env_true — returns 0 if the argument equals "1", 1 otherwise.
+# Usage: is_env_true "${MY_VAR:-0}"
+is_env_true() { [[ "${1:-0}" == "1" ]]; }
+
+# ── Styled output helpers (for scripts that don't use gum) ────────────────────
+# Call init_output_helpers after sourcing to set _rule/_step/_pass/_fail/_skip/_indent.
+init_output_helpers() {
+  if [[ -n "$_GUM" ]]; then
+    _rule()   { :; }
+    _step()   { $_GUM style --foreground 240 "$*"; }
+    _pass()   { $_GUM log --level info  "$*"; }
+    _fail()   { $_GUM log --level error "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
+    _skip()   { $_GUM log --level warn  "$*"; }
+    _indent() { cat; }
+  else
+    _RULE='  ────────────────────────────────────────────────────'
+    _rule()   { printf '%s\n' "$_RULE"; }
+    _step()   { printf '\n  %s\n' "$*"; }
+    _pass()   { printf '  ✅  %s\n' "$*"; }
+    _fail()   { printf '\n  ❌  %s\n' "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
+    _skip()   { printf '  ⏭   %s\n' "$*"; }
+    _indent() { sed 's/^/    /'; }
+  fi
+}
+
 # find_compose_file — prints path to first compose file found, returns 1 if none.
 find_compose_file() {
   local f

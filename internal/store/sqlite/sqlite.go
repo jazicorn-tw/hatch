@@ -8,10 +8,16 @@ import (
 	"fmt"
 	"math"
 
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo" // registers sqlite-vec with go-sqlite3
 	"github.com/jazicorn/hatch/internal/chunker"
 	"github.com/jazicorn/hatch/internal/store"
-	_ "modernc.org/sqlite" // registers the "sqlite" driver with database/sql
+	_ "github.com/mattn/go-sqlite3" // registers the "sqlite3" driver with database/sql
 )
+
+func init() {
+	// Auto-load the sqlite-vec extension into every new go-sqlite3 connection.
+	sqlite_vec.Auto()
+}
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
@@ -19,7 +25,7 @@ var migrationsFS embed.FS
 // float32Size is the byte width of a single float32 value.
 const float32Size = 4
 
-// Store is a SQLite-backed implementation of store.Store.
+// Store is a SQLite-backed implementation of store.VecStore.
 type Store struct {
 	db *sql.DB
 }
@@ -27,7 +33,7 @@ type Store struct {
 // Open opens (or creates) a SQLite database at path with WAL mode enabled,
 // then runs any pending migrations.
 func Open(path string) (*Store, error) {
-	db, err := sql.Open("sqlite", path+"?_journal_mode=WAL")
+	db, err := sql.Open("sqlite3", path+"?_journal_mode=WAL")
 	if err != nil {
 		return nil, fmt.Errorf("sqlite: open %s: %w", path, err)
 	}
@@ -89,11 +95,11 @@ func (s *Store) applyMigration(version string) error {
 	if count > 0 {
 		return nil
 	}
-	sql, err := migrationsFS.ReadFile("migrations/" + version)
+	sqlBytes, err := migrationsFS.ReadFile("migrations/" + version)
 	if err != nil {
 		return fmt.Errorf("sqlite: read migration %s: %w", version, err)
 	}
-	if _, err := s.db.Exec(string(sql)); err != nil {
+	if _, err := s.db.Exec(string(sqlBytes)); err != nil {
 		return fmt.Errorf("sqlite: apply migration %s: %w", version, err)
 	}
 	if _, err := s.db.Exec(
@@ -104,56 +110,145 @@ func (s *Store) applyMigration(version string) error {
 	return nil
 }
 
-// Add inserts records into the chunks table.
+// upsertStmts holds the prepared statements needed for a single Upsert transaction.
+type upsertStmts struct {
+	chunk     *sql.Stmt
+	vecDelete *sql.Stmt
+	vecInsert *sql.Stmt
+}
+
+// close releases all prepared statements.
+func (u *upsertStmts) close() {
+	u.chunk.Close()
+	u.vecDelete.Close()
+	u.vecInsert.Close()
+}
+
+// prepareUpsertStmts prepares the three statements required by Upsert within tx.
+// The caller must call close() on the returned value when done.
+func prepareUpsertStmts(ctx context.Context, tx *sql.Tx) (*upsertStmts, error) {
+	chunk, err := tx.PrepareContext(ctx,
+		`INSERT OR REPLACE INTO chunks (id, source, text, embedding) VALUES (?, ?, ?, ?)`)
+	if err != nil {
+		return nil, fmt.Errorf("sqlite: prepare chunk insert: %w", err)
+	}
+	// vec0 virtual tables do not support INSERT OR REPLACE; use DELETE then INSERT.
+	vecDelete, err := tx.PrepareContext(ctx,
+		`DELETE FROM vec_chunks WHERE chunk_id = ?`)
+	if err != nil {
+		chunk.Close()
+		return nil, fmt.Errorf("sqlite: prepare vec delete: %w", err)
+	}
+	vecInsert, err := tx.PrepareContext(ctx,
+		`INSERT INTO vec_chunks (chunk_id, embedding) VALUES (?, ?)`)
+	if err != nil {
+		chunk.Close()
+		vecDelete.Close()
+		return nil, fmt.Errorf("sqlite: prepare vec insert: %w", err)
+	}
+	return &upsertStmts{chunk: chunk, vecDelete: vecDelete, vecInsert: vecInsert}, nil
+}
+
+// execUpsertRecord writes a single record using pre-prepared statements.
+func execUpsertRecord(ctx context.Context, stmts *upsertStmts, r store.Record) error {
+	blob := encodeVec(r.Embedding)
+	if _, err := stmts.chunk.ExecContext(ctx, r.Chunk.ID, r.Chunk.Source, r.Chunk.Text, blob); err != nil {
+		return fmt.Errorf("sqlite: insert chunk %s: %w", r.Chunk.ID, err)
+	}
+	if len(r.Embedding) == 0 {
+		return nil
+	}
+	if _, err := stmts.vecDelete.ExecContext(ctx, r.Chunk.ID); err != nil {
+		return fmt.Errorf("sqlite: delete vec %s: %w", r.Chunk.ID, err)
+	}
+	if _, err := stmts.vecInsert.ExecContext(ctx, r.Chunk.ID, blob); err != nil {
+		return fmt.Errorf("sqlite: insert vec %s: %w", r.Chunk.ID, err)
+	}
+	return nil
+}
+
+// Add inserts records into the store. Delegates to Upsert for store.Store compatibility.
 func (s *Store) Add(ctx context.Context, records []store.Record) error {
+	return s.Upsert(ctx, records)
+}
+
+// Upsert inserts or replaces records in both the chunks and vec_chunks tables.
+// Records are keyed by Chunk.ID; existing rows are replaced atomically.
+func (s *Store) Upsert(ctx context.Context, records []store.Record) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("sqlite: begin tx: %w", err)
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	stmt, err := tx.PrepareContext(ctx,
-		`INSERT OR REPLACE INTO chunks (id, source, text, embedding) VALUES (?, ?, ?, ?)`)
+	stmts, err := prepareUpsertStmts(ctx, tx)
 	if err != nil {
-		return fmt.Errorf("sqlite: prepare insert: %w", err)
+		return err
 	}
-	defer stmt.Close()
+	defer stmts.close()
 
 	for _, r := range records {
-		blob := encodeVec(r.Embedding)
-		if _, err := stmt.ExecContext(ctx, r.Chunk.ID, r.Chunk.Source, r.Chunk.Text, blob); err != nil {
-			return fmt.Errorf("sqlite: insert chunk %s: %w", r.Chunk.ID, err)
+		if err := execUpsertRecord(ctx, stmts, r); err != nil {
+			return err
 		}
 	}
 	return tx.Commit()
 }
 
-// Search returns the k nearest records using min-heap top-k selection
-// with cosine similarity — O(n log k) vs a naive O(n log n) full sort.
-func (s *Store) Search(ctx context.Context, vec []float32, k int) ([]store.Record, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, source, text, embedding FROM chunks`)
+// DeleteBySource removes all records whose source matches the given value.
+func (s *Store) DeleteBySource(ctx context.Context, source string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("sqlite: search query: %w", err)
+		return fmt.Errorf("sqlite: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM vec_chunks WHERE chunk_id IN (SELECT id FROM chunks WHERE source = ?)`,
+		source,
+	); err != nil {
+		return fmt.Errorf("sqlite: delete vec_chunks for source %q: %w", source, err)
+	}
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM chunks WHERE source = ?`, source,
+	); err != nil {
+		return fmt.Errorf("sqlite: delete chunks for source %q: %w", source, err)
+	}
+	return tx.Commit()
+}
+
+// Search returns the k nearest records using sqlite-vec KNN search.
+func (s *Store) Search(ctx context.Context, vec []float32, k int) ([]store.Record, error) {
+	blob := encodeVec(vec)
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT c.id, c.source, c.text, c.embedding
+		 FROM vec_chunks v
+		 JOIN chunks c ON c.id = v.chunk_id
+		 WHERE v.embedding MATCH ? AND k = ?
+		 ORDER BY v.distance`,
+		blob, k,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("sqlite: knn search: %w", err)
 	}
 	defer rows.Close()
 
 	var records []store.Record
 	for rows.Next() {
 		var id, src, text string
-		var blob []byte
-		if err := rows.Scan(&id, &src, &text, &blob); err != nil {
+		var embBlob []byte
+		if err := rows.Scan(&id, &src, &text, &embBlob); err != nil {
 			return nil, fmt.Errorf("sqlite: scan row: %w", err)
 		}
 		records = append(records, store.Record{
 			Chunk:     chunker.Chunk{ID: id, Source: src, Text: text},
-			Embedding: decodeVec(blob),
+			Embedding: decodeVec(embBlob),
 		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("sqlite: rows: %w", err)
 	}
-
-	return store.TopK(records, vec, k), nil
+	return records, nil
 }
 
 // Close closes the underlying database connection.

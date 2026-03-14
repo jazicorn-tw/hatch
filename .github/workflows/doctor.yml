@@ -66,18 +66,6 @@ jobs:
 
           echo "✅ doctor.json structure validated (jq)"
 
-      - name: Fail if doctor status is fail
-        if: always()
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          status="$(jq -r '.status' build/doctor/doctor.json)"
-          if [[ "$status" == "fail" ]]; then
-            echo "::error::doctor reported status=fail"
-            exit 1
-          fi
-
       - name: Annotate doctor findings
         if: always()
         shell: bash
@@ -91,42 +79,43 @@ jobs:
           max_err=10
           max_warn=10
 
-          err_count="$(jq -r '.errors | length' "$json")"
-          warn_count="$(jq -r '.warnings | length' "$json")"
-
-          # errors -> ::error::
-          if [[ "$err_count" -gt 0 ]]; then
-            jq -r --argjson max "$max_err" '.errors[:$max][]' "$json" \
+          # Emit GitHub annotations for one JSON array key.
+          # Usage: emit_annotations <key> <level> <max>
+          emit_annotations() {
+            local key="$1" level="$2" max="$3"
+            jq -r --argjson max "$max" ".${key}[:\$max][]" "$json" \
               | while IFS= read -r msg; do
                   [[ -z "${msg//[[:space:]]/}" ]] && continue
-                  printf '::error::%s\n' "$msg"
+                  printf '::%s::%s\n' "$level" "$msg"
                 done
-          fi
+          }
 
-          # warnings -> ::warning::
-          if [[ "$warn_count" -gt 0 ]]; then
-            jq -r --argjson max "$max_warn" '.warnings[:$max][]' "$json" \
-              | while IFS= read -r msg; do
-                  [[ -z "${msg//[[:space:]]/}" ]] && continue
-                  printf '::warning::%s\n' "$msg"
-                done
-          fi
+          # Parse once to avoid re-reading the file per field.
+          doctor=$(cat "$json")
+          err_count=$(jq -r '.errors | length'   <<< "$doctor")
+          warn_count=$(jq -r '.warnings | length' <<< "$doctor")
+
+          [[ "$err_count"  -gt 0 ]] && emit_annotations errors   error   "$max_err"
+          [[ "$warn_count" -gt 0 ]] && emit_annotations warnings warning "$max_warn"
 
           echo "🔔 annotations emitted: errors=${err_count} warnings=${warn_count} (capped at ${max_err}/${max_warn})"
 
-      - name: Doctor summary
+      - name: Doctor summary and status check
         if: always()
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
 
-          status="$(jq -r '.status // "unknown"' build/doctor/doctor.json)"
-          warn_count="$(jq -r '.warnings | length' build/doctor/doctor.json)"
-          err_count="$(jq -r '.errors | length' build/doctor/doctor.json)"
+          # Parse once — avoids re-reading the file for each field.
+          doctor=$(cat build/doctor/doctor.json)
+          status=$(jq -r '.status // "unknown"'  <<< "$doctor")
+          warn_count=$(jq -r '.warnings | length' <<< "$doctor")
+          err_count=$(jq -r '.errors | length'    <<< "$doctor")
 
           echo "🩺 doctor: status=${status} warnings=${warn_count} errors=${err_count}"
 
+          # Write step summary before the potential exit so it is always visible.
           {
             echo "## 🩺 Doctor snapshot"
             echo ""
@@ -134,6 +123,11 @@ jobs:
             echo "- **warnings:** \`${warn_count}\`"
             echo "- **errors:** \`${err_count}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$status" == "fail" ]]; then
+            echo "::error::doctor reported status=fail"
+            exit 1
+          fi
 
       - name: Upload doctor report
         if: always()
