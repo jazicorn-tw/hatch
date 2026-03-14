@@ -1,15 +1,19 @@
 # syntax=docker/dockerfile:1
 
 # ── Cross-compilation helper ────────────────────────────────────────────────────
-# xx (https://github.com/tonistiigi/xx) provides xx-go, xx-apk, and xx-verify.
+# xx (https://github.com/tonistiigi/xx) provides xx-go, xx-apt-get, and xx-verify.
 # xx-go sets GOOS/GOARCH/CC automatically for the target platform so the builder
 # stays on --platform=$BUILDPLATFORM (native amd64 on GHA) with no QEMU needed.
 FROM --platform=$BUILDPLATFORM tonistiigi/xx@sha256:c64defb9ed5a91eacb37f96ccc3d4cd72521c4bd18d5442905b95e2226b0e707 AS xx
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 # CGO_ENABLED=1 is required: mattn/go-sqlite3 and sqlite-vec use CGO.
-# -extldflags="-static" produces a fully static binary for distroless/static.
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+# Debian (bookworm) is used instead of Alpine: sqlite-vec.c references BSD-compat
+# u_int*_t types (u_int8_t, u_int16_t, u_int64_t) that glibc defines but musl omits.
+# -tags "netgo osusergo"  replaces glibc DNS and user-lookup with pure-Go
+#                         implementations — required for fully static glibc binaries.
+# -extldflags="-static"   statically links C deps (sqlite3, sqlite-vec).
+FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS builder
 
 # Copy xx helpers into the builder.
 # COPY --from=xx / / is the canonical pattern — xx is built FROM scratch and
@@ -19,9 +23,11 @@ COPY --from=xx / /
 ARG TARGETPLATFORM
 
 # clang + lld: cross-compiler that works for all target architectures.
-# xx-apk installs the target-specific sysroot (musl headers, libc, sqlite3 headers).
-RUN apk add --no-cache clang lld
-RUN xx-apk add --no-cache musl-dev gcc sqlite-dev
+# xx-apt-get configures Debian multiarch and installs the target-architecture
+# cross-toolchain (gcc-aarch64-linux-gnu for arm64) and libsqlite3 headers.
+RUN apt-get update && apt-get install -y --no-install-recommends clang lld \
+    && rm -rf /var/lib/apt/lists/*
+RUN xx-apt-get install -y --no-install-recommends gcc libsqlite3-dev
 
 WORKDIR /build
 
@@ -38,6 +44,7 @@ RUN go mod download
 COPY cmd/ cmd/
 COPY internal/ internal/
 RUN CGO_ENABLED=1 xx-go build \
+    -tags "netgo osusergo" \
     -ldflags="-s -w -extldflags=-static" -trimpath -o /hatch ./cmd/hatch/ && \
     xx-verify --static /hatch
 
