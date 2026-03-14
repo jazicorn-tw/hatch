@@ -135,13 +135,59 @@ Uses the OpenAI Embeddings API. Requires an OpenAI account and API key.
 
 ---
 
+## Google Gemini
+
+Uses the Google Generative AI Embeddings API. Requires a Google Cloud account and API key.
+
+| Property     | Value                      |
+| ------------ | -------------------------- |
+| Provider key | `gemini`                   |
+| Default      | no                         |
+| Required env | `GOOGLE_API_KEY`           |
+| Recommended  | `text-embedding-004`       |
+| Vector dim   | 768 (`text-embedding-004`) |
+
+### Google Gemini Setup
+
+1. Create an API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).
+
+2. Add the key to your environment. In `.env` (created by `./dev env init`):
+
+   ```bash
+   GOOGLE_API_KEY=AIza...
+   ```
+
+   Or export directly:
+
+   ```bash
+   export GOOGLE_API_KEY=AIza...
+   ```
+
+3. Set the provider in `~/.hatch/config.yaml`:
+
+   ```yaml
+   embed_provider: gemini
+   ```
+
+   Or via environment variable:
+
+   ```bash
+   export HATCH_EMBED_PROVIDER=gemini
+   ```
+
+4. Verify by ingesting a small source. If the API key is missing or invalid,
+   hatch exits with a clear error before any embeddings are generated.
+
+---
+
 ## Implementation Status
 
 | Provider           | Status | Milestone |
 | ------------------ | ------ | --------- |
 | Fake (test double) | ✅     | M1        |
-| Ollama             | 🔲     | M2        |
-| OpenAI             | 🔲     | M2        |
+| OpenAI             | ✅     | M2        |
+| Google Gemini      | 🔲     | M3        |
+| Ollama             | 🔲     | v4        |
 
 ---
 

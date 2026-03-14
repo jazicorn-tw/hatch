@@ -116,6 +116,50 @@ Uses the OpenAI Chat Completions API. Requires an OpenAI account and API key.
 
 ---
 
+## Google Gemini
+
+Uses the Google Generative AI API. Requires a Google Cloud account and API key.
+
+| Property     | Value              |
+| ------------ | ------------------ |
+| Provider key | `gemini`           |
+| Default      | no                 |
+| Required env | `GOOGLE_API_KEY`   |
+| Recommended  | `gemini-2.0-flash` |
+
+### Google Gemini Setup
+
+1. Create an API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).
+
+2. Add the key to your environment. In `.env` (created by `./dev env init`):
+
+   ```bash
+   GOOGLE_API_KEY=AIza...
+   ```
+
+   Or export directly:
+
+   ```bash
+   export GOOGLE_API_KEY=AIza...
+   ```
+
+3. Set the provider in `~/.hatch/config.yaml`:
+
+   ```yaml
+   llm_provider: gemini
+   ```
+
+   Or via environment variable:
+
+   ```bash
+   export HATCH_LLM_PROVIDER=gemini
+   ```
+
+4. Verify by running hatch. If the API key is missing or invalid, hatch exits
+   with a clear error before any completions are requested.
+
+---
+
 ## Ollama
 
 Runs entirely on-device. No API key or account required.
@@ -178,9 +222,10 @@ Runs entirely on-device. No API key or account required.
 | Provider           | Status | Milestone |
 | ------------------ | ------ | --------- |
 | Fake (test double) | ✅     | M1        |
-| Anthropic          | 🔲     | M2        |
-| OpenAI             | 🔲     | M2        |
-| Ollama             | 🔲     | M2        |
+| Anthropic          | 🔲     | M3        |
+| Google Gemini      | 🔲     | M3        |
+| OpenAI             | 🔲     | M3        |
+| Ollama             | 🔲     | v4        |
 
 ---
 
