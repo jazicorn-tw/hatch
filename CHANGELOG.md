@@ -1,5 +1,27 @@
 # 📦 Release History
 
+## 📦 Release 0.2.1
+
+### 🐛 Fixes
+
+- **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation (3f9dab5)
+
+### 📝 Docs
+
+- add M3 quiz engine milestone doc (9461b90)
+
+
+
+## 0.2.1
+
+### 🐛 Fixes
+
+- **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation
+
+### 📝 Docs
+
+- add M3 quiz engine milestone doc
+
 ## 📦 Release 0.2.0
 
 ### ✨ Features
