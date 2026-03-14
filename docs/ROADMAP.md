@@ -54,6 +54,7 @@ Single binary, local ingestion, full TUI quiz loop
 - [x] Code chunker: fixed-size with configurable overlap (`.ts`, `.tsx`, `.go`, `.scss`)
 - [x] Ingestion pipeline: `Run(ctx, source, chunker, embedder, store, progressCh)`
 - [x] OpenAI embedder: batched API calls, `text-embedding-3-small` default
+- [x] Google Gemini embedder: batched API calls, `text-embedding-004` default (768 dims)
 - [x] sqlite-vec store: `Upsert`, cosine KNN `Search`, `DeleteBySource`
 - [x] CLI: `hatch ingest --source=<name>`, `hatch sources list/remove`
 
@@ -61,7 +62,6 @@ Single binary, local ingestion, full TUI quiz loop
 
 - [ ] Anthropic LLM (`claude-sonnet-4-6` default)
 - [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GOOGLE_API_KEY` env var
-- [ ] Google Gemini embedder: `text-embedding-004` default (768 dims); `GOOGLE_API_KEY` env var
 - [ ] Question types: `Question{Text, Options[4], CorrectIndex, Explanation, SourceChunks}`
 - [ ] Quiz generator: topic probe → `Store.Search(TopK=5)` → LLM MCQ prompt
 - [ ] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)

@@ -26,6 +26,7 @@ type Config struct {
 	JWTSecret     string         `mapstructure:"jwt_secret"`
 	DBPath        string         `mapstructure:"db_path"`
 	OpenAIAPIKey  string         `mapstructure:"openai_api_key"`
+	GoogleAPIKey  string         `mapstructure:"google_api_key"`
 	Sources       []SourceConfig `mapstructure:"sources"`
 }
 
@@ -56,6 +57,7 @@ func Load() (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 	v.BindEnv("openai_api_key", "HATCH_OPENAI_API_KEY") //nolint:errcheck
+	v.BindEnv("google_api_key", "GOOGLE_API_KEY")       //nolint:errcheck
 
 	// Not found is fine — env vars + defaults suffice.
 	if err := v.ReadInConfig(); err != nil {
@@ -78,8 +80,8 @@ const (
 )
 
 // knownLLMProviders and knownEmbedProviders list accepted provider values.
-var knownLLMProviders = map[string]bool{"anthropic": true, "openai": true, "ollama": true}
-var knownEmbedProviders = map[string]bool{"openai": true, "ollama": true}
+var knownLLMProviders = map[string]bool{"anthropic": true, "openai": true, "gemini": true, "ollama": true}
+var knownEmbedProviders = map[string]bool{"openai": true, "gemini": true, "ollama": true}
 
 // validateProvider checks that value is a key in known, returning a descriptive
 // error using field as the config key name.
@@ -165,6 +167,7 @@ web_password: changeme
 jwt_secret: ""
 db_path: ~/.hatch/hatch.db
 openai_api_key: ""
+google_api_key: ""
 
 # Ingestion sources. Add entries with: hatch sources add
 # sources:

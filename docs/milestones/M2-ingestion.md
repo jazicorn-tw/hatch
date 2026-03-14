@@ -5,7 +5,7 @@ updated_by:   jazicorn-tw
 updated_date: 2026-03-14
 status:       active
 tags:         [milestone, ingest, pipeline, go, architecture]
-description:  "Walkthrough of Milestone 2 — the ingestion pipeline: filesystem source, chunkers, OpenAI embedder, sqlite-vec KNN store, and CLI commands."
+description:  "Walkthrough of Milestone 2 — the ingestion pipeline: filesystem source, chunkers, OpenAI and Gemini embedders, sqlite-vec KNN store, and CLI commands."
 -->
 # Milestone 2 — Ingestion Pipeline
 
@@ -18,7 +18,7 @@ pipeline that indexes local codebases and documentation into the vector store.
 
 Milestone 2 adds the first user-visible feature: `hatch ingest`. A developer points hatch
 at a local directory, and the pipeline walks every file, splits it into chunks, generates
-embeddings via OpenAI, and stores the vectors in SQLite for later retrieval.
+embeddings via OpenAI or Google Gemini, and stores the vectors in SQLite for later retrieval.
 
 By the end of this milestone:
 
@@ -35,12 +35,13 @@ By the end of this milestone:
 - [x] Markdown chunker: heading-based recursive split (H1 / H2 / H3 boundaries)
 - [x] Code chunker: fixed-size sliding window with configurable overlap
 - [x] OpenAI embedder: batched API calls, `text-embedding-3-small` default
+- [x] Google Gemini embedder: batched API calls, `text-embedding-004` default (768 dims)
 - [x] Ingestion pipeline: `Run(ctx, source, chunker, embedder, store, progressCh)`
 - [x] `VecStore` interface extending `Store` with `Upsert` and `DeleteBySource`
 - [x] sqlite-vec migration (`002_vec.sql`): `vec0` virtual table for KNN search
 - [x] Replace brute-force `TopK` with sqlite-vec KNN in `Store.Search`
 - [x] Swap SQLite driver: `modernc.org/sqlite` → `mattn/go-sqlite3` (CGO) for vec extension
-- [x] Config: extend with `sources []SourceConfig` and `openai_api_key`
+- [x] Config: extend with `sources []SourceConfig`, `openai_api_key`, and `google_api_key`
 - [x] CLI: `hatch ingest --source=<name>`, `hatch sources list`, `hatch sources remove --name=<name>`
 - [x] Fakes: `source/fake`, `store/fake` for pipeline tests
 
@@ -57,6 +58,8 @@ internal/chunker/code/      Fixed-size sliding window chunker — configurable w
                             and overlap; chunk metadata carries line ranges.
 internal/embedder/openai/   OpenAI Embeddings API client — batches chunks, retries on
                             rate limit, defaults to text-embedding-3-small.
+internal/embedder/gemini/   Google Generative AI Embeddings client — batches chunks,
+                            defaults to text-embedding-004 (768 dims).
 internal/pipeline/          Run() — orchestrates fetch → chunk → embed → upsert with an
                             optional progress channel for reporting chunk counts.
 internal/store/vecstore.go  VecStore interface — extends Store with Upsert and DeleteBySource.
@@ -111,17 +114,31 @@ for display purposes.
 
 ---
 
-## 3. OpenAI Embedder (`internal/embedder/openai/`)
+## 3. Embedder (`internal/embedder/`)
+
+The pipeline calls `Embedder.Embed(ctx, texts)` — a provider-agnostic interface defined in
+M1. M2 ships two concrete implementations: OpenAI and Google Gemini. Both are fully
+interchangeable via config — set `embed_provider` to switch without changing any code.
+
+### OpenAI (`internal/embedder/openai/`)
 
 Calls the [OpenAI Embeddings API](https://platform.openai.com/docs/guides/embeddings) in
 batches. The default model is `text-embedding-3-small` (1536 dimensions). Construction
 requires a non-empty API key — no lazy validation.
 
-Configuration via `~/.hatch/config.yaml`:
-
 ```yaml
 openai_api_key: sk-...
 embed_provider: openai
+```
+
+### Google Gemini (`internal/embedder/gemini/`)
+
+Uses the Google Generative AI Embeddings API. Default model is `text-embedding-004`
+(768 dimensions). Requires `GOOGLE_API_KEY`.
+
+```yaml
+google_api_key: AIza...
+embed_provider: gemini
 ```
 
 ---
@@ -231,7 +248,7 @@ go test ./internal/store/sqlite/...
 # Full suite
 go test ./...
 
-# End-to-end (requires OpenAI API key)
+# End-to-end (requires OpenAI or Google Gemini API key)
 hatch ingest --source=myproject
 hatch sources list
 ```
@@ -240,13 +257,14 @@ hatch sources list
 
 ## Technologies
 
-| Technology          | Role in M2                                              |
-| ------------------- | ------------------------------------------------------- |
-| `mattn/go-sqlite3`  | CGO SQLite driver required for sqlite-vec extension     |
+| Technology          | Role in M2                                               |
+| ------------------- | -------------------------------------------------------- |
+| `mattn/go-sqlite3`  | CGO SQLite driver required for sqlite-vec extension      |
 | sqlite-vec          | KNN vector search inside SQLite via `vec0` virtual table |
-| OpenAI Embeddings   | `text-embedding-3-small` — 1536-dim dense vectors       |
-| `go-gitignore`      | `.gitignore` pattern matching in filesystem source      |
-| `net/http`          | `DetectContentType` for binary-file detection           |
+| OpenAI Embeddings   | `text-embedding-3-small` — 1536-dim dense vectors        |
+| Google Gemini       | `text-embedding-004` — 768-dim dense vectors             |
+| `go-gitignore`      | `.gitignore` pattern matching in filesystem source       |
+| `net/http`          | `DetectContentType` for binary-file detection            |
 
 ---
 
