@@ -230,3 +230,5 @@ Three-tier orchestration, adaptive quizzing, curriculum mode
 - [ ] Knowledge graph: entity graph over indexed codebase for richer retrieval
 - [ ] Curriculum mode: structured onboarding track vs. random drill
 - [ ] LLM-driven `Dispatch`: task DAG built dynamically per-request
+- [ ] Per-agent model routing: evaluate [Fantasy](https://github.com/charmbracelet/fantasy) as unified multi-provider API;
+      replace per-agent injected `llm.Completer` if Fantasy has reached stable release (see ADR-014)
