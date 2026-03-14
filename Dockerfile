@@ -1,11 +1,25 @@
 # syntax=docker/dockerfile:1
 
+# ── Cross-compilation helper ────────────────────────────────────────────────────
+# xx (https://github.com/tonistiigi/xx) provides xx-go, xx-apk, and xx-verify.
+# xx-go sets GOOS/GOARCH/CC automatically for the target platform so the builder
+# stays on --platform=$BUILDPLATFORM (native amd64 on GHA) with no QEMU needed.
+FROM --platform=$BUILDPLATFORM tonistiigi/xx@sha256:c64defb9ed5a91eacb37f96ccc3d4cd72521c4bd18d5442905b95e2226b0e707 AS xx
+
 # ── Build ──────────────────────────────────────────────────────────────────────
-# Build on the host platform, cross-compile for the target.
+# CGO_ENABLED=1 is required: mattn/go-sqlite3 and sqlite-vec use CGO.
+# -extldflags="-static" produces a fully static binary for distroless/static.
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+# Copy xx helpers into the builder.
+COPY --from=xx /usr/local/bin/xx-* /usr/local/bin/
+
+ARG TARGETPLATFORM
+
+# clang + lld: cross-compiler that works for all target architectures.
+# xx-apk installs the target-specific sysroot (musl headers, libc).
+RUN apk add --no-cache clang lld
+RUN xx-apk add --no-cache musl-dev gcc
 
 WORKDIR /build
 
@@ -16,13 +30,14 @@ RUN go mod download
 # Copy only the Go source directories needed for the build.
 # Explicit paths prevent sensitive files (env vars, keys, docs) from
 # entering the build context even if .dockerignore is misconfigured.
-# modernc.org/sqlite is pure Go — CGO_ENABLED=0 works without a C toolchain.
-# -ldflags="-s -w"  strips debug info and DWARF tables (smaller binary).
-# -trimpath          removes local build paths from stack traces.
+# -ldflags="-s -w"              strips debug info and DWARF tables (smaller binary).
+# -extldflags="-static"         statically links C deps (sqlite3, sqlite-vec).
+# -trimpath                     removes local build paths from stack traces.
 COPY cmd/ cmd/
 COPY internal/ internal/
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w" -trimpath -o /hatch ./cmd/hatch/
+RUN CGO_ENABLED=1 xx-go build \
+    -ldflags="-s -w -extldflags=-static" -trimpath -o /hatch ./cmd/hatch/ && \
+    xx-verify --static /hatch
 
 # ── Runtime ────────────────────────────────────────────────────────────────────
 # distroless/static-debian12:nonroot
