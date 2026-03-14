@@ -1,5 +1,75 @@
 # 📦 Release History
 
+## 📦 Release 0.2.0
+
+### ✨ Features
+
+- implement M2 ingestion pipeline (2046fc3)
+- **ingest:** add Gemini embedder and split dev into .dev/ modules (97c5923)
+
+### 🐛 Fixes
+
+- **docker:** add sqlite-dev to xx-apk for sqlite-vec CGO headers (aaaaae5)
+- **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation (8bf8768)
+- **docker:** switch builder to debian bookworm for sqlite-vec CGO compatibility (661f353)
+- **docker:** use xx canonical COPY pattern and pin image to digest (0fd0d35)
+- **qa:** resolve code smells and optimize data structures (0982ec8)
+
+### 🤖 CI / CD
+
+- **deploy:** add validate-helm gate to ensure both artifacts publish together (bac747c)
+
+### 🧹 Chores
+
+- **dev:** add tags command and extend tag taxonomy (b365cf6)
+
+### 📝 Docs
+
+- add deeper onboarding docs, Charmbracelet ecosystem, and ADR-014 (7753e27)
+- add M2 ingestion pipeline doc and mark complete in roadmap (845a18b)
+- add M3 quiz engine milestone doc (80f3491)
+- **adr:** add ADR-012 sqlite-vec over dedicated vector databases (c24aa76)
+- **adr:** add ADR-013 Go as implementation language (4c424d2)
+- **devops:** add git and github operation guides (771272f)
+- **providers:** add Gemini provider support and 1Password integration guide (0fa5d23)
+- split TESTING.md, rename EMBEDDINGS to EMBEDDER, update references (c3c3671)
+
+
+
+## 0.2.0
+
+### ✨ Features
+
+- implement M2 ingestion pipeline
+- **ingest:** add Gemini embedder and split dev into .dev/ modules
+
+### 🐛 Fixes
+
+- **docker:** add sqlite-dev to xx-apk for sqlite-vec CGO headers
+- **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation
+- **docker:** switch builder to debian bookworm for sqlite-vec CGO compatibility
+- **docker:** use xx canonical COPY pattern and pin image to digest
+- **qa:** resolve code smells and optimize data structures
+
+### 🤖 CI / CD
+
+- **deploy:** add validate-helm gate to ensure both artifacts publish together
+
+### 🧹 Chores
+
+- **dev:** add tags command and extend tag taxonomy
+
+### 📝 Docs
+
+- add deeper onboarding docs, Charmbracelet ecosystem, and ADR-014
+- add M2 ingestion pipeline doc and mark complete in roadmap
+- add M3 quiz engine milestone doc
+- **adr:** add ADR-012 sqlite-vec over dedicated vector databases
+- **adr:** add ADR-013 Go as implementation language
+- **devops:** add git and github operation guides
+- **providers:** add Gemini provider support and 1Password integration guide
+- split TESTING.md, rename EMBEDDINGS to EMBEDDER, update references
+
 ## 📦 Release 0.1.2
 
 ### 🐛 Fixes
