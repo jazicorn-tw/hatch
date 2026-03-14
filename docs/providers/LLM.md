@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-12
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-14
 status:       active
 tags:         [providers, llm]
 description:  "How to set up each LLM provider for use with hatch."
@@ -187,6 +187,6 @@ Runs entirely on-device. No API key or account required.
 ## Related
 
 - [`docs/PROVIDERS.md`](../PROVIDERS.md) — provider overview
-- [`docs/providers/EMBEDDINGS.md`](EMBEDDINGS.md) — embedding provider setup
+- [`docs/providers/EMBEDDER.md`](EMBEDDER.md) — embedding provider setup
 - [`docs/providers/CONFIGURATION.md`](CONFIGURATION.md) — full config reference
 - [`docs/milestones/M1-foundation.md`](../milestones/M1-foundation.md) — fake provider implementation

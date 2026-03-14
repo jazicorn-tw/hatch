@@ -2,12 +2,12 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-12
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-14
 status:       active
-tags:         [providers, embedder, embeddings]
+tags:         [providers, embedder]
 description:  "How to set up each embedding provider for use with hatch."
 -->
-# Embedding Providers
+# Embedder Providers
 
 Step-by-step setup for each embedding provider supported by hatch.
 Set `embed_provider` in `~/.hatch/config.yaml` or override with `HATCH_EMBED_PROVIDER`.

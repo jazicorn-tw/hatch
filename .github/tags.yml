@@ -29,15 +29,19 @@ tags:
     - deploy
     - dev
     - devops
+    - cli
     - dx
+    - e2e
     - embedder
     - env
     - errors
     - faq
     - hooks
+    - ingest
     - llm
     - local
     - onboarding
+    - pipeline
     - planning
     - providers
     - qa
@@ -54,7 +58,7 @@ tags:
   docs:
     - architecture
     - configuration
-    - embeddings
+    - fakes
     - foundation
     - go
     - milestone

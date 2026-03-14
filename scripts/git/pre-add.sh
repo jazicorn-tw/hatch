@@ -191,13 +191,10 @@ fi
 if [[ ${#md_files[@]} -gt 0 ]]; then
   _TAGS_FILE="$REPO_ROOT/.github/tags.yml"
   _ALLOWED_TAGS=()
-  # Associative array for O(1) tag membership test (requires bash 4+).
-  declare -A _ALLOWED_SET=()
   if [[ -f "$_TAGS_FILE" ]]; then
     # Parse `both:` and `docs:` sections — `commits:` is scope-only, not valid for frontmatter
     while IFS= read -r _line; do
       _ALLOWED_TAGS+=("$_line")
-      _ALLOWED_SET["$_line"]=1
     done < <(awk '/^  (both|docs):/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_TAGS_FILE")
   else
     printf '  ⚠️   validate-tags — .github/tags.yml not found, skipping\n'
@@ -221,8 +218,8 @@ if [[ ${#md_files[@]} -gt 0 ]]; then
       while IFS= read -r _tag; do
         _tag=$(printf '%s' "$_tag" | xargs)   # trim whitespace
         [[ -z "$_tag" ]] && continue
-        # O(1) lookup via associative array instead of O(k) linear scan
-        [[ -z "${_ALLOWED_SET[$_tag]+x}" ]] && _tag_errors+=("\"$_tag\" in $_f")
+        printf '%s\n' "${_ALLOWED_TAGS[@]}" | grep -qxF -- "$_tag" \
+          || _tag_errors+=("\"$_tag\" in $_f")
       done <<< "$_tags_raw"
     done
   fi
