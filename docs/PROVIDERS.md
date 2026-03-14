@@ -59,6 +59,19 @@ Generates completions via the OpenAI Chat Completions API.
 
 Set `HATCH_LLM_PROVIDER=openai` and provide `OPENAI_API_KEY`.
 
+### Google Gemini
+
+Generates completions via the Google Generative AI API.
+
+| Property     | Value              |
+| ------------ | ------------------ |
+| Provider key | `gemini`           |
+| Default      | no                 |
+| Required env | `GOOGLE_API_KEY`   |
+| Recommended  | `gemini-2.0-flash` |
+
+Set `HATCH_LLM_PROVIDER=gemini` and provide `GOOGLE_API_KEY`.
+
 ### Ollama
 
 Generates completions via a locally running [Ollama](https://ollama.com) instance.
@@ -92,6 +105,20 @@ Generates embeddings via the OpenAI Embeddings API.
 | Vector dim   | 1536 (`text-embedding-3-small`) |
 
 Set `HATCH_EMBED_PROVIDER=openai` and provide `OPENAI_API_KEY`.
+
+### Google Gemini Embedder
+
+Generates embeddings via the Google Generative AI Embeddings API.
+
+| Property     | Value                      |
+| ------------ | -------------------------- |
+| Provider key | `gemini`                   |
+| Default      | no                         |
+| Required env | `GOOGLE_API_KEY`           |
+| Recommended  | `text-embedding-004`       |
+| Vector dim   | 768 (`text-embedding-004`) |
+
+Set `HATCH_EMBED_PROVIDER=gemini` and provide `GOOGLE_API_KEY`.
 
 ### Ollama Embedder
 
@@ -135,16 +162,24 @@ llm_provider: anthropic
 embed_provider: ollama
 ```
 
+### Google only (Gemini LLM + Gemini embeddings)
+
+```yaml
+llm_provider: gemini
+embed_provider: gemini
+```
+
 ---
 
 ## Implementation Status
 
-| Provider           | LLM | Embeddings | Milestone |
-| ------------------ | --- | ---------- | --------- |
-| Fake (test double) | ✅  | ✅         | M1        |
-| Anthropic          | 🔲  | —          | M2        |
-| OpenAI             | 🔲  | 🔲         | M2        |
-| Ollama             | 🔲  | 🔲         | M2        |
+| Provider           | LLM | Embedder | Milestone |
+| ------------------ | --- | -------- | --------- |
+| Fake (test double) | ✅  | ✅       | M1        |
+| OpenAI             | 🔲  | ✅       | M2 / M3   |
+| Anthropic          | 🔲  | —        | M3        |
+| Google Gemini      | 🔲  | 🔲       | M3        |
+| Ollama             | 🔲  | 🔲       | v4        |
 
 ---
 

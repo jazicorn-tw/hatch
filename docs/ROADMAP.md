@@ -60,6 +60,8 @@ Single binary, local ingestion, full TUI quiz loop
 ### Milestone 3 — Quiz Engine
 
 - [ ] Anthropic LLM (`claude-sonnet-4-6` default)
+- [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GOOGLE_API_KEY` env var
+- [ ] Google Gemini embedder: `text-embedding-004` default (768 dims); `GOOGLE_API_KEY` env var
 - [ ] Question types: `Question{Text, Options[4], CorrectIndex, Explanation, SourceChunks}`
 - [ ] Quiz generator: topic probe → `Store.Search(TopK=5)` → LLM MCQ prompt
 - [ ] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)
@@ -203,6 +205,7 @@ First intentional breaking change — enforces authentication across SSH and web
 
 More ingestion targets and smarter search
 
+- [ ] GitHub source: `git clone` remote repo to a temp directory, reuse filesystem source for walking and chunking; supports public and private repos (SSH key or PAT)
 - [ ] Web URL source: HTTP fetch, HTML→text, paragraph chunking
 - [ ] Ollama provider: local LLM + embedder, no API cost
 - [ ] LLM streaming: token-by-token feedback in quiz screen
