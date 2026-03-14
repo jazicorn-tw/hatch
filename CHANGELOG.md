@@ -9,6 +9,72 @@
 
 ### 🐛 Fixes
 
+- **docker:** add sqlite-dev to xx-apk for sqlite-vec CGO headers (38ac08a)
+- **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation (3f9dab5)
+- **docker:** use xx canonical COPY pattern and pin image to digest (57d4976)
+- **qa:** resolve code smells and optimize data structures (0982ec8)
+
+### 🧹 Chores
+
+- **dev:** add tags command and extend tag taxonomy (b365cf6)
+- **release:** 0.2.0 (0b2daaa)
+- **release:** 0.2.0 (3158ca0)
+- **release:** 0.2.1 (4649b30)
+
+### 📝 Docs
+
+- add deeper onboarding docs, Charmbracelet ecosystem, and ADR-014 (7753e27)
+- add M2 ingestion pipeline doc and mark complete in roadmap (845a18b)
+- add M3 quiz engine milestone doc (9461b90)
+- **adr:** add ADR-012 sqlite-vec over dedicated vector databases (c24aa76)
+- **adr:** add ADR-013 Go as implementation language (4c424d2)
+- **devops:** add git and github operation guides (4756788)
+- **providers:** add Gemini provider support and 1Password integration guide (0fa5d23)
+- split TESTING.md, rename EMBEDDINGS to EMBEDDER, update references (c3c3671)
+
+
+
+## 0.2.0
+
+### ✨ Features
+
+- implement M2 ingestion pipeline
+- **ingest:** add Gemini embedder and split dev into .dev/ modules
+
+### 🐛 Fixes
+
+- **docker:** add sqlite-dev to xx-apk for sqlite-vec CGO headers
+- **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation
+- **docker:** use xx canonical COPY pattern and pin image to digest
+- **qa:** resolve code smells and optimize data structures
+
+### 🧹 Chores
+
+- **dev:** add tags command and extend tag taxonomy
+- **release:** 0.2.0
+- **release:** 0.2.0
+- **release:** 0.2.1
+
+### 📝 Docs
+
+- add deeper onboarding docs, Charmbracelet ecosystem, and ADR-014
+- add M2 ingestion pipeline doc and mark complete in roadmap
+- add M3 quiz engine milestone doc
+- **adr:** add ADR-012 sqlite-vec over dedicated vector databases
+- **adr:** add ADR-013 Go as implementation language
+- **devops:** add git and github operation guides
+- **providers:** add Gemini provider support and 1Password integration guide
+- split TESTING.md, rename EMBEDDINGS to EMBEDDER, update references
+
+## 📦 Release 0.2.0
+
+### ✨ Features
+
+- implement M2 ingestion pipeline (2046fc3)
+- **ingest:** add Gemini embedder and split dev into .dev/ modules (97c5923)
+
+### 🐛 Fixes
+
 - **docker:** pin tonistiigi/xx to digest and enable CGO cross-compilation (3f9dab5)
 - **docker:** use xx canonical COPY pattern and pin image to digest (57d4976)
 - **qa:** resolve code smells and optimize data structures (0982ec8)
