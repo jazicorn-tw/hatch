@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-14
 status:       active
 tags:         [planning]
 description:  "Hatch development roadmap — versioned milestones"
@@ -47,15 +47,15 @@ Single binary, local ingestion, full TUI quiz loop
 - [x] In-memory store (`internal/store/memory/`) for tests
 - [x] Fake embedder + fake LLM for tests
 
-### Milestone 2 — Ingestion Pipeline
+### Milestone 2 — Ingestion Pipeline ✅
 
-- [ ] Filesystem source: directory walker with gitignore support
-- [ ] Markdown chunker: heading-based recursive split
-- [ ] Code chunker: fixed-size with configurable overlap (`.ts`, `.tsx`, `.go`, `.scss`)
-- [ ] Ingestion pipeline: `Run(ctx, source, chunker, embedder, store, progressCh)`
-- [ ] OpenAI embedder: batched API calls, `text-embedding-3-small` default
-- [ ] sqlite-vec store: `Upsert`, cosine KNN `Search`, `DeleteBySource`
-- [ ] CLI: `hatch ingest --source=<name>`, `hatch sources list/remove`
+- [x] Filesystem source: directory walker with gitignore support
+- [x] Markdown chunker: heading-based recursive split
+- [x] Code chunker: fixed-size with configurable overlap (`.ts`, `.tsx`, `.go`, `.scss`)
+- [x] Ingestion pipeline: `Run(ctx, source, chunker, embedder, store, progressCh)`
+- [x] OpenAI embedder: batched API calls, `text-embedding-3-small` default
+- [x] sqlite-vec store: `Upsert`, cosine KNN `Search`, `DeleteBySource`
+- [x] CLI: `hatch ingest --source=<name>`, `hatch sources list/remove`
 
 ### Milestone 3 — Quiz Engine
 
