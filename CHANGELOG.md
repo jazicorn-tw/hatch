@@ -1,5 +1,55 @@
 # 📦 Release History
 
+## 📦 Release 0.2.0
+
+### ✨ Features
+
+- implement M2 ingestion pipeline (2046fc3)
+- **ingest:** add Gemini embedder and split dev into .dev/ modules (97c5923)
+
+### 🐛 Fixes
+
+- **qa:** resolve code smells and optimize data structures (0982ec8)
+
+### 🧹 Chores
+
+- **dev:** add tags command and extend tag taxonomy (b365cf6)
+
+### 📝 Docs
+
+- add deeper onboarding docs, Charmbracelet ecosystem, and ADR-014 (7753e27)
+- add M2 ingestion pipeline doc and mark complete in roadmap (845a18b)
+- **adr:** add ADR-012 sqlite-vec over dedicated vector databases (c24aa76)
+- **adr:** add ADR-013 Go as implementation language (4c424d2)
+- **providers:** add Gemini provider support and 1Password integration guide (0fa5d23)
+- split TESTING.md, rename EMBEDDINGS to EMBEDDER, update references (c3c3671)
+
+
+
+## 0.2.0
+
+### ✨ Features
+
+- implement M2 ingestion pipeline
+- **ingest:** add Gemini embedder and split dev into .dev/ modules
+
+### 🐛 Fixes
+
+- **qa:** resolve code smells and optimize data structures
+
+### 🧹 Chores
+
+- **dev:** add tags command and extend tag taxonomy
+
+### 📝 Docs
+
+- add deeper onboarding docs, Charmbracelet ecosystem, and ADR-014
+- add M2 ingestion pipeline doc and mark complete in roadmap
+- **adr:** add ADR-012 sqlite-vec over dedicated vector databases
+- **adr:** add ADR-013 Go as implementation language
+- **providers:** add Gemini provider support and 1Password integration guide
+- split TESTING.md, rename EMBEDDINGS to EMBEDDER, update references
+
 ## 📦 Release 0.1.2
 
 ### 🐛 Fixes
