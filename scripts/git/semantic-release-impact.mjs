@@ -22,6 +22,21 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Labels emitted as rule_label= in the key=value output. */
+const RULE_LABELS = {
+  DEFAULT: "default",
+  RELEASE_RULES: "releaseRules",
+  UNKNOWN: "unknown",
+};
+
+/** Silent logger passed to analyzeCommits so it produces no output. */
+const noop = () => {};
+const SILENT_LOGGER = { log: noop, info: noop, warn: noop, error: noop, debug: noop };
+
 function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -78,8 +93,9 @@ function normalizeAnalyzerConfig(releaseConfig) {
  */
 function parseConventional(message) {
   const msg = message.replaceAll("\r", "");
-  const header = msg.split("\n")[0] ?? "";
-  const body = msg.split("\n").slice(1).join("\n");
+  const lines = msg.split("\n");
+  const header = lines[0] ?? "";
+  const body = lines.slice(1).join("\n");
 
   const isRevert = /^Revert\s+"/.test(header);
 
@@ -140,6 +156,33 @@ function explainDefaultRule(parsed, impact) {
   return `${impact} (default rules)`;
 }
 
+/**
+ * Determines ruleLabel and ruleDetail from the analysis result.
+ * Extracted to keep main() below the cognitive-complexity threshold.
+ */
+function determineRuleExplanation(analyzerOpts, parsed, impact) {
+  const rules = analyzerOpts?.releaseRules;
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return {
+      ruleLabel: RULE_LABELS.DEFAULT,
+      ruleDetail: explainDefaultRule(parsed, impact),
+    };
+  }
+
+  const match = findMatchingRule(rules, parsed, impact);
+  if (match) {
+    return {
+      ruleLabel: `${RULE_LABELS.RELEASE_RULES}[${match.idx}]`,
+      ruleDetail: describeRule(match.rule, match.idx),
+    };
+  }
+
+  return {
+    ruleLabel: RULE_LABELS.RELEASE_RULES,
+    ruleDetail: "no matching rule found (defaults applied)",
+  };
+}
+
 function findMatchingRule(rules, parsed, impact) {
   let found = null;
   let foundIdx = -1;
@@ -156,7 +199,11 @@ function findMatchingRule(rules, parsed, impact) {
   return found ? { rule: found, idx: foundIdx } : null;
 }
 
-async function main() {
+// ---------------------------------------------------------------------------
+// Entry point — top-level await (ES modules only)
+// ---------------------------------------------------------------------------
+
+try {
   const repoRoot = process.argv[2] || process.cwd();
   const msgFile = process.argv[3];
 
@@ -183,37 +230,17 @@ async function main() {
   const commits = [{ message, hash: "LOCAL", committerDate: new Date().toISOString() }];
 
   // analyzeCommits(pluginConfig, context) — logger must be in context (2nd arg)
-  const noop = () => {};
-  const logger = { log: noop, info: noop, warn: noop, error: noop, debug: noop };
-  const result = await analyzeCommits({ ...analyzerOpts }, { cwd: repoRoot, logger, commits });
+  const result = await analyzeCommits({ ...analyzerOpts }, { cwd: repoRoot, logger: SILENT_LOGGER, commits });
   const impact = result ?? "none";
 
   const parsed = parseConventional(message);
-
-  // Determine rule label/detail
-  let ruleLabel = "default";
-  let ruleDetail = explainDefaultRule(parsed, impact);
-
-  const rules = analyzerOpts?.releaseRules;
-  if (Array.isArray(rules) && rules.length > 0) {
-    // Prefer exact match with computed impact where possible
-    const match = findMatchingRule(rules, parsed, impact);
-    if (match) {
-      ruleLabel = `releaseRules[${match.idx}]`;
-      ruleDetail = describeRule(match.rule, match.idx);
-    } else {
-      ruleLabel = "releaseRules";
-      ruleDetail = "no matching rule found (defaults applied)";
-    }
-  }
+  const { ruleLabel, ruleDetail } = determineRuleExplanation(analyzerOpts, parsed, impact);
 
   process.stdout.write(`impact=${impact}\n`);
   process.stdout.write(`rule_label=${ruleLabel}\n`);
   process.stdout.write(`rule_detail=${ruleDetail}\n`);
-}
-
-main().catch((err) => {
+} catch (err) {
   console.error("semantic-release-impact: unexpected error.");
   console.error(err?.stack || String(err));
   process.exit(1);
-});
+}

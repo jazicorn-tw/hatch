@@ -30,6 +30,10 @@ if [[ -z "${msg_file}" || ! -f "${msg_file}" ]]; then
   exit 1
 fi
 
+_CONFIRM_REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+# shellcheck source=../lib/shell-utils.sh
+[[ -n "$_CONFIRM_REPO_ROOT" ]] && source "$_CONFIRM_REPO_ROOT/scripts/lib/shell-utils.sh" 2>/dev/null || true
+
 # Opt-out
 if [[ "${CONFIRM_RELEASE_COMMIT:-1}" == "0" ]]; then
   exit 0
@@ -158,32 +162,16 @@ fi
 # -----------------------------------------------------------------------------
 # Prompt via /dev/tty (works even if pre-commit steals stdin)
 # -----------------------------------------------------------------------------
-if [[ -r /dev/tty && -w /dev/tty ]]; then
+if has_interactive_tty; then
   exec </dev/tty >/dev/tty 2>&1
+  setup_colors
 
-  # Styling
-  if [[ -t 1 ]]; then
-    ESC=$'\033'
-    RESET="${ESC}[0m"
-    BOLD="${ESC}[1m"
-    DIM="${ESC}[2m"
-    YELLOW="${ESC}[1;33m"
-    RED="${ESC}[1;31m"
-    GREEN="${ESC}[1;32m"
-    CYAN="${ESC}[1;36m"
-  else
-    RESET="" BOLD="" DIM="" YELLOW="" RED="" GREEN="" CYAN=""
-  fi
-
-  icon="ℹ️"
-  accent="${CYAN}"
-  if [[ "${impact}" == "minor" ]]; then
-    icon="⚠️"
-    accent="${YELLOW}"
-  elif [[ "${impact}" == "major" ]]; then
-    icon="🚨"
-    accent="${RED}"
-  fi
+  # Map impact level to icon and accent color
+  case "${impact}" in
+    major) icon="🚨"; accent="${RED}" ;;
+    minor) icon="⚠️";  accent="${YELLOW}" ;;
+    *)     icon="ℹ️";  accent="${CYAN}" ;;
+  esac
 
   strict_badge=""
   if [[ "${STRICT_RELEASE_CONFIRM}" == "1" ]]; then

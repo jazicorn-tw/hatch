@@ -9,6 +9,10 @@ set -euo pipefail
 # Bypass for one push:  SKIP_BASELINE_TAG_CHECK=1 git push
 # See:                  docs/devops/RELEASE_POLICY.md
 
+_REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+# shellcheck source=scripts/lib/shell-utils.sh
+[[ -n "$_REPO_ROOT" ]] && source "$_REPO_ROOT/scripts/lib/shell-utils.sh" 2>/dev/null || true
+
 # ── Skip conditions ────────────────────────────────────────────────────────────
 if [[ "${CI:-}" == "true" ]]; then exit 0; fi
 if [[ "${SKIP_BASELINE_TAG_CHECK:-0}" == "1" ]]; then exit 0; fi
@@ -44,21 +48,9 @@ fi
 initial_sha="$(git rev-list --max-parents=0 HEAD 2>/dev/null || true)"
 
 # ── Styled warning (requires TTY) ─────────────────────────────────────────────
-if [[ -r /dev/tty && -w /dev/tty ]]; then
+if has_interactive_tty; then
   exec </dev/tty >/dev/tty 2>&1
-
-  if test -t 1; then
-    ESC=$'\033'
-    RESET="${ESC}[0m"
-    BOLD="${ESC}[1m"
-    DIM="${ESC}[2m"
-    YELLOW="${ESC}[1;33m"
-    CYAN="${ESC}[1;36m"
-    GREEN="${ESC}[1;32m"
-    RED="${ESC}[1;31m"
-  else
-    RESET="" BOLD="" DIM="" YELLOW="" CYAN="" GREEN="" RED=""
-  fi
+  setup_colors
 
   cat <<EOF
 

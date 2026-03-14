@@ -9,15 +9,24 @@ import (
 	"github.com/spf13/viper"
 )
 
+// SourceConfig describes a named ingestion source.
+type SourceConfig struct {
+	Name string `mapstructure:"name"`
+	Path string `mapstructure:"path"`
+	Type string `mapstructure:"type"` // "filesystem"
+}
+
 // Config holds all application configuration.
 type Config struct {
-	LLMProvider   string `mapstructure:"llm_provider"`
-	EmbedProvider string `mapstructure:"embed_provider"`
-	SSHPort       int    `mapstructure:"ssh_port"`
-	HTTPPort      int    `mapstructure:"http_port"`
-	WebPassword   string `mapstructure:"web_password"`
-	JWTSecret     string `mapstructure:"jwt_secret"`
-	DBPath        string `mapstructure:"db_path"`
+	LLMProvider   string         `mapstructure:"llm_provider"`
+	EmbedProvider string         `mapstructure:"embed_provider"`
+	SSHPort       int            `mapstructure:"ssh_port"`
+	HTTPPort      int            `mapstructure:"http_port"`
+	WebPassword   string         `mapstructure:"web_password"`
+	JWTSecret     string         `mapstructure:"jwt_secret"`
+	DBPath        string         `mapstructure:"db_path"`
+	OpenAIAPIKey  string         `mapstructure:"openai_api_key"`
+	Sources       []SourceConfig `mapstructure:"sources"`
 }
 
 // defaults used by Init and Load when keys are absent.
@@ -46,6 +55,7 @@ func Load() (*Config, error) {
 	v.SetEnvPrefix("HATCH")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
+	v.BindEnv("openai_api_key", "HATCH_OPENAI_API_KEY") //nolint:errcheck
 
 	// Not found is fine — env vars + defaults suffice.
 	if err := v.ReadInConfig(); err != nil {
@@ -61,24 +71,70 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
+// Port range bounds.
+const (
+	minPort = 1
+	maxPort = 65535
+)
+
 // knownLLMProviders and knownEmbedProviders list accepted provider values.
 var knownLLMProviders = map[string]bool{"anthropic": true, "openai": true, "ollama": true}
 var knownEmbedProviders = map[string]bool{"openai": true, "ollama": true}
 
+// validateProvider checks that value is a key in known, returning a descriptive
+// error using field as the config key name.
+func validateProvider(value, field string, known map[string]bool) error {
+	if !known[value] {
+		keys := make([]string, 0, len(known))
+		for k := range known {
+			keys = append(keys, k)
+		}
+		return fmt.Errorf("config: unknown %s %q (want: %s)", field, value, strings.Join(keys, ", "))
+	}
+	return nil
+}
+
+// validatePort returns an error when port is outside [minPort, maxPort].
+func validatePort(port int, field string) error {
+	if port < minPort || port > maxPort {
+		return fmt.Errorf("config: %s %d out of range [%d, %d]", field, port, minPort, maxPort)
+	}
+	return nil
+}
+
+// validate returns an error if the SourceConfig is missing required fields.
+func (s SourceConfig) validate(idx int) error {
+	if s.Name == "" {
+		return fmt.Errorf("config: sources[%d]: name is required", idx)
+	}
+	if s.Path == "" {
+		return fmt.Errorf("config: sources[%d] %q: path is required", idx, s.Name)
+	}
+	if s.Type != "filesystem" {
+		return fmt.Errorf("config: sources[%d] %q: unknown type %q (want: filesystem)", idx, s.Name, s.Type)
+	}
+	return nil
+}
+
 // Validate returns an error if any config value is out of range or unrecognised.
 // Call after Load to catch misconfigured environments at startup.
 func (c *Config) Validate() error {
-	if !knownLLMProviders[c.LLMProvider] {
-		return fmt.Errorf("config: unknown llm_provider %q (want: anthropic, openai, ollama)", c.LLMProvider)
+	if err := validateProvider(c.LLMProvider, "llm_provider", knownLLMProviders); err != nil {
+		return err
 	}
-	if !knownEmbedProviders[c.EmbedProvider] {
-		return fmt.Errorf("config: unknown embed_provider %q (want: openai, ollama)", c.EmbedProvider)
+	if err := validateProvider(c.EmbedProvider, "embed_provider", knownEmbedProviders); err != nil {
+		return err
 	}
-	if c.SSHPort < 1 || c.SSHPort > 65535 {
-		return fmt.Errorf("config: ssh_port %d out of range [1, 65535]", c.SSHPort)
+	if err := validatePort(c.SSHPort, "ssh_port"); err != nil {
+		return err
 	}
-	if c.HTTPPort < 1 || c.HTTPPort > 65535 {
-		return fmt.Errorf("config: http_port %d out of range [1, 65535]", c.HTTPPort)
+	if err := validatePort(c.HTTPPort, "http_port"); err != nil {
+		return err
+	}
+	for i, s := range c.Sources {
+		if err := s.validate(i); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -108,6 +164,14 @@ http_port: 8080
 web_password: changeme
 jwt_secret: ""
 db_path: ~/.hatch/hatch.db
+openai_api_key: ""
+
+# Ingestion sources. Add entries with: hatch sources add
+# sources:
+#   - name: docs
+#     path: ./docs
+#     type: filesystem
+sources: []
 `
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return fmt.Errorf("config init: write %s: %w", path, err)

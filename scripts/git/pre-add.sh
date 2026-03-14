@@ -113,32 +113,9 @@ failed=0
 fail_count=0
 cd "$REPO_ROOT"
 
-# ── Gum availability (for output only — optional, falls back to printf) ───────
-_GUM=""
-if command -v gum >/dev/null 2>&1; then
-  _GUM="gum"
-else
-  _gopath_gum="$(go env GOPATH 2>/dev/null)/bin/gum"
-  [[ -x "$_gopath_gum" ]] && _GUM="$_gopath_gum"
-fi
-
-# ── Output helpers ────────────────────────────────────────────────────────────
-if [[ -n "$_GUM" ]]; then
-  _rule()   { :; }
-  _step()   { $_GUM style --foreground 240 "$*"; }
-  _pass()   { $_GUM log --level info  "$*"; }
-  _fail()   { $_GUM log --level error "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
-  _skip()   { $_GUM log --level warn  "$*"; }
-  _indent() { cat; }
-else
-  _RULE='  ────────────────────────────────────────────────────'
-  _rule()   { printf '%s\n' "$_RULE"; }
-  _step()   { printf '\n  %s\n' "$*"; }
-  _pass()   { printf '  ✅  %s\n' "$*"; }
-  _fail()   { printf '\n  ❌  %s\n' "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
-  _skip()   { printf '  ⏭   %s\n' "$*"; }
-  _indent() { sed 's/^/    /'; }
-fi
+# Output helpers are provided by shell-utils.sh via init_output_helpers.
+# _GUM was already resolved when shell-utils.sh was sourced above.
+init_output_helpers
 
 # ── Header ────────────────────────────────────────────────────────────────────
 _label="pre-add"
@@ -185,6 +162,7 @@ if [[ ${#md_files[@]} -gt 0 ]]; then
     else
       # No frontmatter — prepend full block (new files start as draft)
       _tmp=$(mktemp)
+      trap 'rm -f "$_tmp"' EXIT
       {
         echo '<!--'
         printf 'created_by:   %s\n' "$_fm_author"
@@ -213,40 +191,41 @@ fi
 if [[ ${#md_files[@]} -gt 0 ]]; then
   _TAGS_FILE="$REPO_ROOT/.github/tags.yml"
   _ALLOWED_TAGS=()
+  # Associative array for O(1) tag membership test (requires bash 4+).
+  declare -A _ALLOWED_SET=()
   if [[ -f "$_TAGS_FILE" ]]; then
     # Parse `both:` and `docs:` sections — `commits:` is scope-only, not valid for frontmatter
     while IFS= read -r _line; do
       _ALLOWED_TAGS+=("$_line")
+      _ALLOWED_SET["$_line"]=1
     done < <(awk '/^  (both|docs):/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_TAGS_FILE")
   else
     printf '  ⚠️   validate-tags — .github/tags.yml not found, skipping\n'
   fi
   _tag_errors=()
 
-  for _f in "${md_files[@]}"; do
-    [[ ${#_ALLOWED_TAGS[@]} -eq 0 ]] && break   # no tags file — skip validation
-    # Skip template files — they contain placeholder tags by design
-    [[ "$_f" == *_TEMPLATE.md ]] && continue
-    _fp="$REPO_ROOT/$_f"
-    [[ -f "$_fp" ]] || _fp="$_f"
+  if [[ ${#_ALLOWED_TAGS[@]} -gt 0 ]]; then
+    for _f in "${md_files[@]}"; do
+      # Skip template files — they contain placeholder tags by design
+      [[ "$_f" == *_TEMPLATE.md ]] && continue
+      _fp="$REPO_ROOT/$_f"
+      [[ -f "$_fp" ]] || _fp="$_f"
 
-    _tags_line=$(grep '^tags:' "$_fp" 2>/dev/null | head -1)
-    # Strip "tags:", brackets, split on commas
-    _tags_raw=$(printf '%s' "$_tags_line" \
-      | sed 's/^tags:[[:space:]]*//' \
-      | tr -d '[]' \
-      | tr ',' '\n')
+      _tags_line=$(grep '^tags:' "$_fp" 2>/dev/null | head -1)
+      # Strip "tags:", brackets, split on commas
+      _tags_raw=$(printf '%s' "$_tags_line" \
+        | sed 's/^tags:[[:space:]]*//' \
+        | tr -d '[]' \
+        | tr ',' '\n')
 
-    while IFS= read -r _tag; do
-      _tag=$(printf '%s' "$_tag" | xargs)   # trim whitespace
-      [[ -z "$_tag" ]] && continue
-      _found=0
-      for _allowed in "${_ALLOWED_TAGS[@]}"; do
-        [[ "$_tag" == "$_allowed" ]] && { _found=1; break; }
-      done
-      [[ $_found -eq 0 ]] && _tag_errors+=("\"$_tag\" in $_f")
-    done <<< "$_tags_raw"
-  done
+      while IFS= read -r _tag; do
+        _tag=$(printf '%s' "$_tag" | xargs)   # trim whitespace
+        [[ -z "$_tag" ]] && continue
+        # O(1) lookup via associative array instead of O(k) linear scan
+        [[ -z "${_ALLOWED_SET[$_tag]+x}" ]] && _tag_errors+=("\"$_tag\" in $_f")
+      done <<< "$_tags_raw"
+    done
+  fi
 
   if [[ ${#_ALLOWED_TAGS[@]} -eq 0 ]]; then
     : # skipped — no tags file
