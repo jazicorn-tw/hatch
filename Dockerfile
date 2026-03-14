@@ -19,9 +19,9 @@ COPY --from=xx / /
 ARG TARGETPLATFORM
 
 # clang + lld: cross-compiler that works for all target architectures.
-# xx-apk installs the target-specific sysroot (musl headers, libc).
+# xx-apk installs the target-specific sysroot (musl headers, libc, sqlite3 headers).
 RUN apk add --no-cache clang lld
-RUN xx-apk add --no-cache musl-dev gcc
+RUN xx-apk add --no-cache musl-dev gcc sqlite-dev
 
 WORKDIR /build
 
