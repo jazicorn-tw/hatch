@@ -33,6 +33,7 @@ set -euo pipefail
 #   clean local            clean local build artifacts
 #   clean docker           clean Docker build cache
 #   clean colima           reset Colima (destructive)
+#   tags                   list all allowed tags (both + docs sections)
 #
 # Overrides (one-off):
 #   AUTO_FORMAT=0 ./dev pre-commit   skip format step
@@ -142,6 +143,7 @@ if [[ -z "$TASK" ]]; then
     "docker reset" \
     "test-ci" \
     "changelog" \
+    "tags" \
     "clean local" \
     "clean docker" \
     "clean colima")
@@ -434,6 +436,27 @@ case "$TASK" in
     $GUM confirm "Reset Colima? This will delete all containers and volumes." || exit 0
     ./scripts/cache/clean-colima.sh
     log_done "clean colima"
+    ;;
+
+  # ── Tags ────────────────────────────────────────────────────────────────────
+  tags)
+    header "tags"
+    _tags_file=".github/tags.yml"
+    if [[ ! -f "$_tags_file" ]]; then
+      log_error "tags file not found: $_tags_file"
+      exit 1
+    fi
+    _both=$(awk '/^  both:/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
+    _docs=$(awk '/^  docs:/{p=1;next}  p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
+    _scopes=$(awk '/^  scopes:/{p=1;next} p && /^  [[:alpha:]]/{p=0} p && /^    - /{sub(/^    - /,""); print}' "$_tags_file")
+    $GUM style --bold "both  (frontmatter + commit scope)"
+    $GUM style --foreground 99 "$(printf '%s\n' $_both | paste - - - - - | column -t)"
+    echo ""
+    $GUM style --bold "docs  (frontmatter only)"
+    $GUM style --foreground 99 "$(printf '%s\n' $_docs | paste - - - - - | column -t)"
+    echo ""
+    $GUM style --bold "scopes  (commit scope only)"
+    $GUM style --foreground 99 "$(printf '%s\n' $_scopes)"
     ;;
 
   # ── Unknown ─────────────────────────────────────────────────────────────────

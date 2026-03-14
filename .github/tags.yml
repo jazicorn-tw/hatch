@@ -23,13 +23,13 @@ tags:
     - build
     - chunker
     - ci
+    - cli
     - commit
     - config
     - db
     - deploy
     - dev
     - devops
-    - cli
     - dx
     - e2e
     - embedder
