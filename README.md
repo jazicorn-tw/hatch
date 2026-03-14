@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-14
 status:       active
 tags:         [onboarding, llm, providers, configuration, go]
 description:  "Overview, usage, configuration, and build instructions for hatch."
@@ -171,7 +171,7 @@ go build ./...    # direct Go build
 | ---------------------------------------------------------------------- | --------------------------------------------------- |
 | [`docs/providers/PROVIDERS.md`](docs/providers/PROVIDERS.md)           | LLM and embedding provider overview                 |
 | [`docs/providers/LLM.md`](docs/providers/LLM.md)                       | LLM providers and recommended models                |
-| [`docs/providers/EMBEDDINGS.md`](docs/providers/EMBEDDINGS.md)         | Embedding providers and recommended models          |
+| [`docs/providers/EMBEDDER.md`](docs/providers/EMBEDDER.md)             | Embedding providers and recommended models          |
 | [`docs/providers/CONFIGURATION.md`](docs/providers/CONFIGURATION.md)   | Full config file and environment variable reference |
 | [`docs/TESTING.md`](docs/TESTING.md)                                   | Test coverage, test doubles, and how to run tests   |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md)                                   | Milestone plan                                      |

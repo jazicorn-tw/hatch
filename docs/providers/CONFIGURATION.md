@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-12
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-14
 status:       active
 tags:         [providers, configuration, config]
 description:  "Full configuration reference for hatch providers, ports, and runtime settings."
@@ -114,4 +114,4 @@ Requires `ANTHROPIC_API_KEY`. Default configuration.
 
 - [`docs/PROVIDERS.md`](../PROVIDERS.md) — provider overview
 - [`docs/providers/LLM.md`](LLM.md) — LLM provider details
-- [`docs/providers/EMBEDDINGS.md`](EMBEDDINGS.md) — embedding provider details
+- [`docs/providers/EMBEDDER.md`](EMBEDDER.md) — embedding provider details

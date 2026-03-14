@@ -2,9 +2,9 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-12
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-14
 status:       active
-tags:         [providers, llm, embeddings, configuration]
+tags:         [providers, llm, embedder, configuration]
 description:  "Supported LLM and embedding providers, how to configure them, and what each one requires."
 -->
 # Providers
@@ -21,7 +21,7 @@ hatch separates two provider concerns:
 | Concern    | Interface                    | Config key       | Env var                |
 | ---------- | ---------------------------- | ---------------- | ---------------------- |
 | LLM        | `internal/llm.LLM`           | `llm_provider`   | `HATCH_LLM_PROVIDER`   |
-| Embeddings | `internal/embedder.Embedder` | `embed_provider` | `HATCH_EMBED_PROVIDER` |
+| Embedder   | `internal/embedder.Embedder` | `embed_provider` | `HATCH_EMBED_PROVIDER` |
 
 Both are provider-agnostic by design — the interfaces accept any conforming implementation.
 Set the provider name via environment variable, or run `hatch config init` to create
@@ -79,7 +79,7 @@ pulled (`ollama pull llama3.2`).
 
 ## Embedding Providers
 
-### OpenAI Embeddings
+### OpenAI Embedder
 
 Generates embeddings via the OpenAI Embeddings API.
 
@@ -93,7 +93,7 @@ Generates embeddings via the OpenAI Embeddings API.
 
 Set `HATCH_EMBED_PROVIDER=openai` and provide `OPENAI_API_KEY`.
 
-### Ollama Embeddings
+### Ollama Embedder
 
 Generates embeddings via a locally running Ollama instance.
 No API key required — runs entirely on-device.
