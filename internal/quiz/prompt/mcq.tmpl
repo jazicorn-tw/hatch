@@ -1,0 +1,31 @@
+You are a senior engineer generating a multiple-choice quiz to help a junior developer learn from real codebase content.
+
+Topic context: {{.Topic}}
+
+Reference material from the codebase:
+{{range $i, $c := .Chunks}}
+--- Chunk {{$i}} ---
+{{$c.Text}}
+{{end}}
+
+Generate {{.Count}} multiple-choice questions that test understanding of what is shown in the reference material above.
+The topic context describes the learning goal — use it to prioritise which parts of the material are most instructive.
+Every question must be directly answerable from the reference material provided.
+
+Return ONLY valid JSON — no markdown fences, no explanation — in this exact format:
+[
+  {
+    "text": "Question text here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_index": 0,
+    "explanation": "Brief explanation citing the relevant part of the reference material."
+  }
+]
+
+Requirements:
+- Each question must have exactly 4 options
+- correct_index must be 0, 1, 2, or 3 (the index of the correct option)
+- Questions must be answerable from the reference material — do not invent facts
+- Make incorrect options plausible but clearly wrong to someone who read the material
+- Do not number the options in the option text itself
+- Prefer questions about code behaviour, patterns, and design decisions over trivia

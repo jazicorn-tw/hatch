@@ -4,5 +4,5 @@
 
 CREATE VIRTUAL TABLE IF NOT EXISTS vec_chunks USING vec0(
     chunk_id TEXT PRIMARY KEY,
-    embedding float[1536]
+    embedding float[768]
 );

@@ -1,6 +1,16 @@
 # .dev/go.sh — Go tasks: format, test
 # Sourced by ./dev — not executed directly.
 
+run_build() {
+  header "build"
+  if has_go_files; then
+    spin "Building hatch binary..." go build -o ./hatch ./cmd/hatch
+    log_done "build — binary written to ./hatch"
+  else
+    log_warn "no Go files found, skipping build"
+  fi
+}
+
 run_format() {
   header "format"
   if has_go_files; then

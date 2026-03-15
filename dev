@@ -20,7 +20,9 @@ set -euo pipefail
 #   doctor                 validate local dev environment
 #   hooks                  install git hooks
 #   exec-bits              check + fix executable bits on scripts and hooks
-#   run                    start the application
+#   build                  compile hatch binary to ./hatch
+#   build run [args...]    build then run ./hatch with resolved secrets
+#   run                    start the application (go run, no args)
 #   env up                 start local dev environment (Colima + Docker)
 #   env down               stop local dev environment
 #   env status             show dev environment status
@@ -80,6 +82,8 @@ if [[ -z "$TASK" ]]; then
     "bootstrap" \
     "doctor" \
     "exec-bits" \
+    "build" \
+    "build run" \
     "run" \
     "env up" \
     "env down" \
@@ -111,6 +115,8 @@ case "$TASK" in
   doctor)            run_doctor ;;
   hooks)             run_hooks ;;
   exec-bits)         run_exec_bits ;;
+  build)             run_build ;;
+  build:run)         run_build_run "${@:3}" ;;
   run)               run_run ;;
   env:up)            run_env_up ;;
   env:down)          run_env_down ;;

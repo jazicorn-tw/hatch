@@ -16,6 +16,7 @@ import (
 	"github.com/jazicorn/hatch/internal/config"
 	"github.com/jazicorn/hatch/internal/embedder"
 	gemiembed "github.com/jazicorn/hatch/internal/embedder/gemini"
+	ollamaembed "github.com/jazicorn/hatch/internal/embedder/ollama"
 	oaiembed "github.com/jazicorn/hatch/internal/embedder/openai"
 	"github.com/jazicorn/hatch/internal/pipeline"
 	"github.com/jazicorn/hatch/internal/source"
@@ -63,10 +64,9 @@ func runIngest(ctx context.Context, sourceName string) error {
 		return fmt.Errorf("ingest: create embedder: %w", err)
 	}
 
-	dbPath := cfg.DBPath
-	if dbPath == "" {
-		home, _ := os.UserHomeDir()
-		dbPath = filepath.Join(home, ".hatch", "hatch.db")
+	dbPath, err := resolveDBPath(cfg.DBPath)
+	if err != nil {
+		return fmt.Errorf("ingest: resolve db path: %w", err)
 	}
 	st, err := sqlite.Open(dbPath)
 	if err != nil {
@@ -98,6 +98,24 @@ func findSource(cfg *config.Config, name string) (*config.SourceConfig, error) {
 	return nil, fmt.Errorf("ingest: source %q not found in config (run: hatch sources list)", name)
 }
 
+// resolveDBPath expands ~ in dbPath, defaults to ~/.hatch/hatch.db, and
+// ensures the parent directory exists before returning the resolved path.
+func resolveDBPath(dbPath string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("get home dir: %w", err)
+	}
+	if dbPath == "" {
+		dbPath = filepath.Join(home, ".hatch", "hatch.db")
+	} else if dbPath == "~" || strings.HasPrefix(dbPath, "~/") {
+		dbPath = filepath.Join(home, dbPath[1:])
+	}
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o700); err != nil {
+		return "", fmt.Errorf("create db dir: %w", err)
+	}
+	return dbPath, nil
+}
+
 // resolvePath returns an absolute path, resolving relative paths against cwd.
 func resolvePath(path string) (string, error) {
 	if filepath.IsAbs(path) {
@@ -114,11 +132,13 @@ func resolvePath(path string) (string, error) {
 func newEmbedder(cfg *config.Config) (embedder.Embedder, error) {
 	switch cfg.EmbedProvider {
 	case "gemini":
-		apiKey := cfg.GoogleAPIKey
+		apiKey := cfg.GeminiAPIKey
 		if apiKey == "" {
-			apiKey = os.Getenv("GOOGLE_API_KEY")
+			apiKey = os.Getenv("GEMINI_API_KEY")
 		}
 		return gemiembed.New(gemiembed.Config{APIKey: apiKey})
+	case "ollama":
+		return ollamaembed.New(ollamaembed.Config{})
 	default: // "openai" and unset
 		apiKey := cfg.OpenAIAPIKey
 		if apiKey == "" {
@@ -163,16 +183,17 @@ func newDispatchChunker() *dispatchChunker {
 	}
 }
 
-// codeExtensions are file extensions routed to the code chunker.
-var codeExtensions = map[string]bool{
-	".go": true, ".ts": true, ".tsx": true, ".scss": true,
+// markdownExtensions are the only extensions routed to the heading-based
+// markdown chunker. Everything else uses the sliding-window code chunker.
+var markdownExtensions = map[string]bool{
+	".md": true, ".mdx": true,
 }
 
 // Chunk implements chunker.Chunker.
 func (d *dispatchChunker) Chunk(doc source.Document) ([]chunker.Chunk, error) {
 	ext := strings.ToLower(filepath.Ext(doc.ID))
-	if codeExtensions[ext] {
-		return d.code.Chunk(doc)
+	if markdownExtensions[ext] {
+		return d.md.Chunk(doc)
 	}
-	return d.md.Chunk(doc)
+	return d.code.Chunk(doc)
 }

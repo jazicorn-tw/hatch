@@ -18,16 +18,17 @@ type SourceConfig struct {
 
 // Config holds all application configuration.
 type Config struct {
-	LLMProvider   string         `mapstructure:"llm_provider"`
-	EmbedProvider string         `mapstructure:"embed_provider"`
-	SSHPort       int            `mapstructure:"ssh_port"`
-	HTTPPort      int            `mapstructure:"http_port"`
-	WebPassword   string         `mapstructure:"web_password"`
-	JWTSecret     string         `mapstructure:"jwt_secret"`
-	DBPath        string         `mapstructure:"db_path"`
-	OpenAIAPIKey  string         `mapstructure:"openai_api_key"`
-	GoogleAPIKey  string         `mapstructure:"google_api_key"`
-	Sources       []SourceConfig `mapstructure:"sources"`
+	LLMProvider     string         `mapstructure:"llm_provider"`
+	EmbedProvider   string         `mapstructure:"embed_provider"`
+	SSHPort         int            `mapstructure:"ssh_port"`
+	HTTPPort        int            `mapstructure:"http_port"`
+	WebPassword     string         `mapstructure:"web_password"`
+	JWTSecret       string         `mapstructure:"jwt_secret"`
+	DBPath          string         `mapstructure:"db_path"`
+	OpenAIAPIKey    string         `mapstructure:"openai_api_key"`
+	GeminiAPIKey    string         `mapstructure:"gemini_api_key"`
+	AnthropicAPIKey string         `mapstructure:"anthropic_api_key"`
+	Sources         []SourceConfig `mapstructure:"sources"`
 }
 
 // defaults used by Init and Load when keys are absent.
@@ -57,7 +58,8 @@ func Load() (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 	v.BindEnv("openai_api_key", "HATCH_OPENAI_API_KEY") //nolint:errcheck
-	v.BindEnv("google_api_key", "GOOGLE_API_KEY")       //nolint:errcheck
+	v.BindEnv("gemini_api_key", "GEMINI_API_KEY")       //nolint:errcheck
+	v.BindEnv("anthropic_api_key", "ANTHROPIC_API_KEY") //nolint:errcheck
 
 	// Not found is fine — env vars + defaults suffice.
 	if err := v.ReadInConfig(); err != nil {
@@ -167,7 +169,8 @@ web_password: changeme
 jwt_secret: ""
 db_path: ~/.hatch/hatch.db
 openai_api_key: ""
-google_api_key: ""
+gemini_api_key: ""
+anthropic_api_key: ""
 
 # Ingestion sources. Add entries with: hatch sources add
 # sources:

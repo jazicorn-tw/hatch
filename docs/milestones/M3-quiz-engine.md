@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-14
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [milestone, llm, pipeline, go, architecture, tui]
 description:  "Walkthrough of Milestone 3 — the quiz engine: LLM providers, question generation, answer evaluation, sessions, and the kata engine with in-TUI code editing."
@@ -41,7 +41,7 @@ By the end of M3:
 ### M3 — Quiz Engine
 
 - [ ] Anthropic LLM: `claude-sonnet-4-6` default; `ANTHROPIC_API_KEY` env var
-- [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GOOGLE_API_KEY` env var
+- [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GEMINI_API_KEY` env var
 - [ ] Question model: `Question{ID, Text, Options[4], CorrectIndex, Explanation, SourceChunks}`
 - [ ] Quiz generator: topic probe → `Store.Search(TopK=5)` → LLM MCQ prompt
 - [ ] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)
@@ -109,11 +109,11 @@ anthropic_api_key: sk-ant-...
 ### Google Gemini (`internal/llm/gemini/`)
 
 Calls the Gemini GenerateContent API. Default model: `gemini-2.0-flash`. Reuses the
-same `GOOGLE_API_KEY` already set for the Gemini embedder.
+same `GEMINI_API_KEY` already set for the Gemini embedder.
 
 ```yaml
 llm_provider: gemini
-google_api_key: AIza...
+gemini_api_key: AIza...
 ```
 
 Both providers are wired into the CLI via config — swap `llm_provider` to change models
