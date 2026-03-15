@@ -1,5 +1,27 @@
 # 📦 Release History
 
+## 📦 Release 0.3.0
+
+### ✨ Features
+
+- implement M3 quiz engine with LLM providers and CLI (9666574)
+
+### 📝 Docs
+
+- **adr:** align adrs with current project state and roadmap (96a452d)
+
+
+
+## 0.3.0
+
+### ✨ Features
+
+- implement M3 quiz engine with LLM providers and CLI
+
+### 📝 Docs
+
+- **adr:** align adrs with current project state and roadmap
+
 ## 📦 Release 0.2.0
 
 ### ✨ Features
