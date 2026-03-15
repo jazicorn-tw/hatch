@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-14
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [onboarding, go]
 description:  "What CGO is, why hatch needs it for sqlite-vec, and what to do when it breaks"
@@ -91,6 +91,7 @@ runner, so this is handled automatically. You don't need to cross-compile locall
 
 - [`GO_BINARY.md`](GO_BINARY.md) — what a Go binary is and what's inside it
 - [`GO_EMBED.md`](GO_EMBED.md) — how hatch bakes SQL migrations into the binary
+- [`CROSS_COMPILATION.md`](CROSS_COMPILATION.md) — how hatch builds CGO binaries for amd64 and arm64 simultaneously
 
 ## Resources
 

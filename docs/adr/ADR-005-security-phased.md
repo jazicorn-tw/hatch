@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-15
 status:       active
 tags:         [adr, api, phases]
 description:  "ADR-005: Phase security implementation (scaffold first, enforcement later)"
@@ -42,7 +42,7 @@ Enable enforcement at a defined phase milestone.
 
 - Wire Go HTTP middleware for authentication from the start (even if it allows all requests)
 - All endpoints are public during early phases
-- JWT-based authentication enforced at **Phase 7**
+- JWT-based authentication enforced at **M9 (Milestone 9 — Auth + Security Hardening)**
 
 ### SSH TUI security
 
