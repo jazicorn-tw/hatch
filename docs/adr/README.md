@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-10
+updated_date: 2026-03-15
 status:       active
 tags:         [adr]
 description:  "Architecture Decision Records (ADR)"
@@ -20,8 +20,8 @@ ADRs capture *why* we made a decision, not just *what* we built.
 > Keep this list in numeric order. Link each ADR file.
 
 - **ADR-000** — [Linting & static analysis](./ADR-000-linting.md) — gofmt, go vet, staticcheck, markdownlint-cli2
-- **ADR-001** — [SQLite + sqlite-vec for embedded persistence](./ADR-001-database-postgresql.md) — no database server required
-- **ADR-002** — [In-memory SQLite for Go integration tests](./ADR-002-testcontainers.md) — replaces Testcontainers
+- **ADR-001** — [SQLite + sqlite-vec for embedded persistence](./ADR-001-database-sqlite.md) — no database server required
+- **ADR-002** — [In-memory SQLite for Go integration tests](./ADR-002-in-memory-sqlite.md) — fast, isolated, no Docker needed
 - **ADR-003** — [Health endpoints via Go net/http](./ADR-003-actuator-health.md) — `/ping` liveness, `/health` readiness
 - **ADR-004** — [Environment config with godotenv](./ADR-004-env-and-config.md) — `.env` + OS vars
 - **ADR-005** — [Phased security implementation](./ADR-005-security-phased.md) — Go middleware + SSH key auth
@@ -30,7 +30,12 @@ ADRs capture *why* we made a decision, not just *what* we built.
 - **ADR-008** — [CI-managed releases with semantic-release](./ADR-008-semantic-release.md) — Go ldflags versioning
 - **ADR-009** — [Deployment strategy](./ADR-009-deployment-strategy.md) — binary distribution + Docker SSH TUI
 - **ADR-010** — [Local CI simulation with `act`](./ADR-010-local-ci-simulation-with-act.md)
-- **ADR-012** — [Branching strategy](./ADR-012-branching-strategy.md) — four-tier: feature → staging → canary → main
+- **ADR-011** — [Branching strategy](./ADR-011-branching-strategy.md) — four-tier: feature → staging → canary → main
+- **ADR-012** — [sqlite-vec for vector search](./ADR-012-vector-store-sqlite-vec.md) — KNN cosine search over embeddings
+- **ADR-013** — [Go as implementation language](./ADR-013-language-go.md) — single binary, CGO, cross-platform
+- **ADR-014** — [Per-agent model routing](./ADR-014-per-agent-model-routing.md) — defer Fantasy to M5; per-agent injected `llm.Completer` in M3–M4
+- **ADR-015** — [CGO cross-compilation](./ADR-015-cgo-cross-compilation.md) — tonistiigi/xx + Debian builder for linux/amd64 + arm64
+- **ADR-016** — [Optional PostgreSQL backend](./ADR-016-postgresql-backend.md) — enterprise deployment option; pgx/v5 + pgvector (M6c)
 
 ---
 

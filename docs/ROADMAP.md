@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [planning]
 description:  "Hatch development roadmap — versioned milestones"
@@ -133,6 +133,17 @@ Juniors SSH in from anywhere; seniors look up scores via CLI
 - [ ] Role-based TUI routing: detect Sr vs Jr on SSH login; fork to Sr menu or Jr menu
 - [ ] Sr TUI menu: manage topics, assign work, review sessions, view leaderboard
 - [ ] Jr TUI menu: my assignments, take quiz, take kata, my scores
+
+### Milestone 6c — PostgreSQL Backend (Enterprise Deployment)
+
+- [ ] Clean store interfaces: `ChunkStore`, `SessionStore`, `EmbedStore` in `internal/store/`
+- [ ] PostgreSQL driver: `pgx/v5` (pure Go, no CGO)
+- [ ] pgvector extension: replace sqlite-vec `Search` with pgvector cosine KNN
+- [ ] Database config: `database.driver: sqlite | postgres` + `database.dsn` in `~/.hatch/config.yaml`
+- [ ] PostgreSQL migrations: schema parity with SQLite migration runner
+- [ ] Helm chart: optional `postgresql` subchart dependency; `database.driver` configmap value
+- [ ] Docs: PostgreSQL deployment guide for teams using existing infrastructure
+- [ ] ADR: document SQLite vs PostgreSQL trade-offs and when to use each
 
 ### Milestone 7 — Score Tracking CLI
 

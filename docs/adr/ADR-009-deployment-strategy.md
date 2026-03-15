@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-05
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-15
 status:       active
 tags:         [adr, deploy, devops, runtime]
 description:  "ADR-009: Deployment Strategy"
@@ -115,4 +115,4 @@ This separation ensures that:
 
 - **ADR-003** — Health endpoints (`/ping`, `/health`)
 - **ADR-008** — CI-managed releases with semantic-release
-- **ADR-012** — Branching strategy (canary → main promotion)
+- **ADR-011** — Branching strategy (canary → main promotion)

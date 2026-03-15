@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-15
 status:       active
 tags:         [onboarding, dev, planning]
 description:  "High-level architecture overview for new contributors"
@@ -68,12 +68,12 @@ hatch/
 
 ## Key design decisions
 
-- **SQLite only** — no external database server required for dev or tests ([ADR-001](../adr/ADR-001-database-postgresql.md))
-- **In-memory SQLite for tests** — fast, isolated, no Docker needed ([ADR-002](../adr/ADR-002-testcontainers.md))
+- **SQLite only** — no external database server required for dev or tests ([ADR-001](../adr/ADR-001-database-sqlite.md))
+- **In-memory SQLite for tests** — fast, isolated, no Docker needed ([ADR-002](../adr/ADR-002-in-memory-sqlite.md))
 - **Single binary** — web assets embedded via `//go:embed`; one file ships everything
 - **Provider-agnostic LLM/embeddings** — swap providers via config, no code changes
 - **CI is authoritative** — `./dev` is a local convenience, never a CI replacement ([ADR-000](../adr/ADR-000-linting.md))
-- **Phased security** — auth scaffolded early, enforcement deferred to Phase 7 ([ADR-005](../adr/ADR-005-security-phased.md))
+- **Phased security** — auth scaffolded early, enforcement deferred to M9 ([ADR-005](../adr/ADR-005-security-phased.md))
 
 ---
 

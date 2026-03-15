@@ -2,14 +2,14 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-14
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [adr, llm, agent, providers]
 description:  "ADR-014: Per-agent model routing — how to assign different LLM providers and models to different agent tasks"
 -->
 # ADR-014: Per-agent model routing
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-03-14
 - **Deciders:** Project maintainers
 - **Scope:** `internal/llm/`, `internal/embedder/`, `internal/agent/`, M5 H-MAS scaffold
