@@ -61,7 +61,7 @@ Single binary, local ingestion, full TUI quiz loop
 ### Milestone 3 — Quiz Engine
 
 - [ ] Anthropic LLM (`claude-sonnet-4-6` default)
-- [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GOOGLE_API_KEY` env var
+- [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GEMINI_API_KEY` env var
 - [ ] Question types: `Question{Text, Options[4], CorrectIndex, Explanation, SourceChunks}`
 - [ ] Quiz generator: topic probe → `Store.Search(TopK=5)` → LLM MCQ prompt
 - [ ] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)

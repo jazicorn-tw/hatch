@@ -14,8 +14,8 @@ const (
 	testDB  = "test.db"
 	errOpen = "Open: %v"
 
-	// vecDim must match the dimension declared in 002_vec.sql (float[1536]).
-	vecDim = 1536
+	// vecDim must match the dimension declared in 002_vec.sql (float[768]).
+	vecDim = 768
 )
 
 // unitVec returns a vecDim-dimensional unit vector with 1.0 at position pos.

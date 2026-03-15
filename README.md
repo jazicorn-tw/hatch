@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [onboarding, llm, providers, configuration, go]
 description:  "Overview, usage, configuration, and build instructions for hatch."
@@ -38,8 +38,8 @@ required on the junior's end.
 | Language      | Go                                                                    |
 | TUI           | Charmbracelet: Bubble Tea v2, Huh v2, Glamour v2, Bubbles, Lip Gloss  |
 | Vector store  | SQLite (WAL mode for concurrent SSH connections)                      |
-| LLM           | Provider-agnostic — Anthropic (default), OpenAI, Ollama               |
-| Embeddings    | Provider-agnostic — Ollama (default), OpenAI                          |
+| LLM           | Provider-agnostic — Anthropic (default), OpenAI, Gemini, Ollama       |
+| Embeddings    | Provider-agnostic — Ollama (default), OpenAI, Gemini                  |
 | SSH server    | Charmbracelet Wish — per-connection Bubble Tea session                |
 | Web dashboard | React + Vite + TypeScript; Go `net/http` REST API; embedded in binary |
 
@@ -122,8 +122,8 @@ hatch config init   # creates ~/.hatch/config.yaml
 Key config options (`~/.hatch/config.yaml`, where `~` is your home directory — e.g. `/Users/yourname`):
 
 ```yaml
-llm_provider:   anthropic        # anthropic | openai | ollama
-embed_provider: ollama           # ollama | openai
+llm_provider:   anthropic        # anthropic | openai | gemini | ollama
+embed_provider: ollama           # ollama | openai | gemini
 ssh_port:       2222
 http_port:      8080
 web_password:   changeme
@@ -133,15 +133,15 @@ db_path:        ~/.hatch/hatch.db
 
 Any key can be overridden with a `HATCH_<KEY>` environment variable:
 
-| Variable               | Purpose                                        |
-| ---------------------- | ---------------------------------------------- |
-| `HATCH_LLM_PROVIDER`   | LLM provider (`anthropic`, `openai`, `ollama`) |
-| `HATCH_EMBED_PROVIDER` | Embedding provider (`ollama`, `openai`)        |
-| `HATCH_SSH_PORT`       | SSH server port (default `2222`)               |
-| `HATCH_HTTP_PORT`      | Web dashboard port (default `8080`)            |
-| `HATCH_JWT_SECRET`     | Signs JWT tokens for SSH + web auth            |
-| `HATCH_WEB_PASSWORD`   | Web dashboard password                         |
-| `HATCH_DB_PATH`        | Path to the SQLite database file               |
+| Variable               | Purpose                                                   |
+| ---------------------- | --------------------------------------------------------- |
+| `HATCH_LLM_PROVIDER`   | LLM provider (`anthropic`, `openai`, `gemini`, `ollama`)  |
+| `HATCH_EMBED_PROVIDER` | Embedding provider (`ollama`, `openai`, `gemini`)         |
+| `HATCH_SSH_PORT`       | SSH server port (default `2222`)                          |
+| `HATCH_HTTP_PORT`      | Web dashboard port (default `8080`)                       |
+| `HATCH_JWT_SECRET`     | Signs JWT tokens for SSH + web auth                       |
+| `HATCH_WEB_PASSWORD`   | Web dashboard password                                    |
+| `HATCH_DB_PATH`        | Path to the SQLite database file                          |
 
 ---
 
@@ -154,13 +154,18 @@ full session replay, Sr review with feedback, CSV export.
 
 ---
 
-## Building
+## Building & running
 
 ```bash
-./dev bootstrap   # first-time setup: hooks + doctor + quality gate
-./dev build       # compile binary (includes embedded web UI)
-./dev test        # run tests
-go build ./...    # direct Go build
+./dev bootstrap          # first-time setup: hooks + doctor + quality gate
+./dev build              # compile binary → ./hatch
+./dev build run          # build then run ./hatch (resolves secrets via 1Password)
+./dev build run <args>   # build then run with arguments, e.g.:
+                         #   ./dev build run quiz --count 5
+                         #   ./dev build run quiz --topic "REST API" --count 5
+                         #   ./dev build run ingest --source docs
+./dev test               # run tests
+go build ./...           # direct Go build (no secret injection)
 ```
 
 ---

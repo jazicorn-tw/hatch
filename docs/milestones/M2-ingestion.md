@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-14
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [milestone, ingest, pipeline, go, architecture]
 description:  "Walkthrough of Milestone 2 — the ingestion pipeline: filesystem source, chunkers, OpenAI and Gemini embedders, sqlite-vec KNN store, and CLI commands."
@@ -41,7 +41,7 @@ By the end of this milestone:
 - [x] sqlite-vec migration (`002_vec.sql`): `vec0` virtual table for KNN search
 - [x] Replace brute-force `TopK` with sqlite-vec KNN in `Store.Search`
 - [x] Swap SQLite driver: `modernc.org/sqlite` → `mattn/go-sqlite3` (CGO) for vec extension
-- [x] Config: extend with `sources []SourceConfig`, `openai_api_key`, and `google_api_key`
+- [x] Config: extend with `sources []SourceConfig`, `openai_api_key`, and `gemini_api_key`
 - [x] CLI: `hatch ingest --source=<name>`, `hatch sources list`, `hatch sources remove --name=<name>`
 - [x] Fakes: `source/fake`, `store/fake` for pipeline tests
 
@@ -134,10 +134,10 @@ embed_provider: openai
 ### Google Gemini (`internal/embedder/gemini/`)
 
 Uses the Google Generative AI Embeddings API. Default model is `text-embedding-004`
-(768 dimensions). Requires `GOOGLE_API_KEY`.
+(768 dimensions). Requires `GEMINI_API_KEY`.
 
 ```yaml
-google_api_key: AIza...
+gemini_api_key: AIza...
 embed_provider: gemini
 ```
 

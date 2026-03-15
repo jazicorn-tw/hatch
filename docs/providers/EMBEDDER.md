@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-12
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [providers, embedder]
 description:  "How to set up each embedding provider for use with hatch."
@@ -143,7 +143,7 @@ Uses the Google Generative AI Embeddings API. Requires a Google Cloud account an
 | ------------ | -------------------------- |
 | Provider key | `gemini`                   |
 | Default      | no                         |
-| Required env | `GOOGLE_API_KEY`           |
+| Required env | `GEMINI_API_KEY`           |
 | Recommended  | `text-embedding-004`       |
 | Vector dim   | 768 (`text-embedding-004`) |
 
@@ -154,13 +154,13 @@ Uses the Google Generative AI Embeddings API. Requires a Google Cloud account an
 2. Add the key to your environment. In `.env` (created by `./dev env init`):
 
    ```bash
-   GOOGLE_API_KEY=AIza...
+   GEMINI_API_KEY=AIza...
    ```
 
    Or export directly:
 
    ```bash
-   export GOOGLE_API_KEY=AIza...
+   export GEMINI_API_KEY=AIza...
    ```
 
 3. Set the provider in `~/.hatch/config.yaml`:

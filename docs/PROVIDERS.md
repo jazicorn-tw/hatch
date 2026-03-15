@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-12
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [providers, llm, embedder, configuration]
 description:  "Supported LLM and embedding providers, how to configure them, and what each one requires."
@@ -67,10 +67,10 @@ Generates completions via the Google Generative AI API.
 | ------------ | ------------------ |
 | Provider key | `gemini`           |
 | Default      | no                 |
-| Required env | `GOOGLE_API_KEY`   |
+| Required env | `GEMINI_API_KEY`   |
 | Recommended  | `gemini-2.0-flash` |
 
-Set `HATCH_LLM_PROVIDER=gemini` and provide `GOOGLE_API_KEY`.
+Set `HATCH_LLM_PROVIDER=gemini` and provide `GEMINI_API_KEY`.
 
 ### Ollama
 
@@ -114,11 +114,11 @@ Generates embeddings via the Google Generative AI Embeddings API.
 | ------------ | -------------------------- |
 | Provider key | `gemini`                   |
 | Default      | no                         |
-| Required env | `GOOGLE_API_KEY`           |
+| Required env | `GEMINI_API_KEY`           |
 | Recommended  | `text-embedding-004`       |
 | Vector dim   | 768 (`text-embedding-004`) |
 
-Set `HATCH_EMBED_PROVIDER=gemini` and provide `GOOGLE_API_KEY`.
+Set `HATCH_EMBED_PROVIDER=gemini` and provide `GEMINI_API_KEY`.
 
 ### Ollama Embedder
 

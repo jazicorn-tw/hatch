@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-14
 updated_by:   jazicorn-tw
-updated_date: 2026-03-14
+updated_date: 2026-03-15
 status:       active
 tags:         [security, config, tooling]
 description:  "1Password CLI integration for managing API keys in hatch"
@@ -19,7 +19,7 @@ API keys (Anthropic, OpenAI, Google) are stored as items in your 1Password
 vault. The CLI fetches them at runtime so secrets never live in plain text on
 disk or in your shell history.
 
-Hatch reads `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GOOGLE_API_KEY`
+Hatch reads `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GEMINI_API_KEY`
 directly from the environment. When a required key is missing or empty, `hatch`
 exits with a configuration error.
 
@@ -32,7 +32,7 @@ The project ships a `.env.op` file containing `op://` URI references:
 ```text
 ANTHROPIC_API_KEY=op://Private/ANTHROPIC_API_KEY/credential
 OPENAI_API_KEY=op://Private/OPENAI_API_KEY/credential
-# GOOGLE_API_KEY=op://Private/GEMINI_API_KEY/credential   ← uncomment if you have this
+# GEMINI_API_KEY=op://Private/GEMINI_API_KEY/credential   ← uncomment if you have this
 ```
 
 These are URIs, not actual keys — the file is safe to commit. Secrets are
@@ -61,7 +61,7 @@ Keys are resolved once when you open a terminal via `$(op read ...)` in your
 ```bash
 export ANTHROPIC_API_KEY=$(op read "op://Private/ANTHROPIC_API_KEY/credential")
 export OPENAI_API_KEY=$(op read "op://Private/OPENAI_API_KEY/credential")
-export GOOGLE_API_KEY=$(op read "op://Private/GEMINI_API_KEY/credential")
+export GEMINI_API_KEY=$(op read "op://Private/GEMINI_API_KEY/credential")
 ```
 
 1Password must be unlocked at terminal startup. If it is not, `op read` fails
