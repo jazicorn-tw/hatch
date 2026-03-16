@@ -12,10 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/jazicorn/hatch/internal/config"
 	"github.com/jazicorn/hatch/internal/kata"
 	"github.com/jazicorn/hatch/internal/kata/sandbox"
-	"github.com/jazicorn/hatch/internal/store/sqlite"
 )
 
 func newKataCmd() *cobra.Command {
@@ -34,30 +32,11 @@ func newKataCmd() *cobra.Command {
 }
 
 func runKata(ctx context.Context, topic string) error {
-	cfg, err := config.Load()
+	d, err := setupDeps()
 	if err != nil {
-		return fmt.Errorf("kata: load config: %w", err)
+		return fmt.Errorf("kata: %w", err)
 	}
-
-	emb, err := newEmbedder(cfg)
-	if err != nil {
-		return fmt.Errorf("kata: create embedder: %w", err)
-	}
-
-	completer, err := newLLMCompleter(cfg)
-	if err != nil {
-		return fmt.Errorf("kata: create llm: %w", err)
-	}
-
-	dbPath, err := resolveDBPath(cfg.DBPath)
-	if err != nil {
-		return fmt.Errorf("kata: resolve db path: %w", err)
-	}
-	st, err := sqlite.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("kata: open store: %w", err)
-	}
-	defer st.Close()
+	defer d.store.Close()
 
 	label := topic
 	if label == "" {
@@ -65,7 +44,7 @@ func runKata(ctx context.Context, topic string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "Generating kata on %q…\n", label)
-	gen := kata.NewGenerator(emb, st, completer, kata.GeneratorConfig{TopK: 10})
+	gen := kata.NewGenerator(d.emb, d.store, d.llm, kata.GeneratorConfig{TopK: 10})
 	k, err := gen.Generate(ctx, label)
 	if err != nil {
 		return fmt.Errorf("kata: generate: %w", err)
@@ -125,7 +104,7 @@ func runKata(ctx context.Context, topic string) error {
 	}
 
 	sess.EndedAt = time.Now()
-	if err := st.SaveKataSession(ctx, sess); err != nil {
+	if err := d.store.SaveKataSession(ctx, sess); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: could not save kata session: %v\n", err)
 	}
 	return nil

@@ -17,14 +17,7 @@ func TestFetchReturnsFiles(t *testing.T) {
 	writeFile(t, root, "b.md", "# World")
 	writeFile(t, root, "sub/c.md", "# Sub")
 
-	f, err := fssource.New(fssource.Config{Root: root, SourceName: "test"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	docs, err := f.Fetch(context.Background())
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
+	docs := mustFetch(t, root, "test")
 	if len(docs) != 3 {
 		t.Errorf("want 3 docs, got %d", len(docs))
 	}
@@ -41,15 +34,7 @@ func TestFetchRespectsGitignore(t *testing.T) {
 	writeFile(t, root, "notes.md", "hello")
 	writeFile(t, root, "debug.log", "ignored")
 
-	f, err := fssource.New(fssource.Config{Root: root, SourceName: "test"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	docs, err := f.Fetch(context.Background())
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
-	ids := docIDs(docs)
+	ids := docIDs(mustFetch(t, root, "test"))
 	if slices.Contains(ids, "debug.log") {
 		t.Error("debug.log should be gitignored")
 	}
@@ -62,14 +47,7 @@ func TestFetchRelativeIDs(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "sub/file.md", "content")
 
-	f, err := fssource.New(fssource.Config{Root: root, SourceName: "s"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	docs, err := f.Fetch(context.Background())
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
+	docs := mustFetch(t, root, "s")
 	if len(docs) != 1 {
 		t.Fatalf("want 1 doc, got %d", len(docs))
 	}
@@ -86,15 +64,7 @@ func TestFetchSkipsBinary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f, err := fssource.New(fssource.Config{Root: root, SourceName: "s"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	docs, err := f.Fetch(context.Background())
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
-	ids := docIDs(docs)
+	ids := docIDs(mustFetch(t, root, "s"))
 	if slices.Contains(ids, "bin.dat") {
 		t.Error("binary file should be skipped")
 	}
@@ -126,15 +96,7 @@ func TestFetchSkipsHiddenDirs(t *testing.T) {
 	writeFile(t, root, "visible.md", "hello")
 	writeFile(t, root, ".hidden/secret.md", "hidden")
 
-	f, err := fssource.New(fssource.Config{Root: root, SourceName: "s"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	docs, err := f.Fetch(context.Background())
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
-	ids := docIDs(docs)
+	ids := docIDs(mustFetch(t, root, "s"))
 	if slices.Contains(ids, ".hidden/secret.md") {
 		t.Error(".hidden/secret.md should be skipped")
 	}
@@ -144,6 +106,19 @@ func TestFetchSkipsHiddenDirs(t *testing.T) {
 }
 
 // helpers
+
+func mustFetch(t *testing.T, root, sourceName string) []source.Document {
+	t.Helper()
+	f, err := fssource.New(fssource.Config{Root: root, SourceName: sourceName})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	docs, err := f.Fetch(context.Background())
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	return docs
+}
 
 func writeFile(t *testing.T, root, rel, content string) {
 	t.Helper()

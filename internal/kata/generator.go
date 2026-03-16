@@ -49,15 +49,10 @@ func NewGenerator(emb embedder.Embedder, st store.Store, completer llm.Completer
 	}
 }
 
-// chunkData is the template context for a single retrieved chunk.
-type chunkData struct {
-	Text string
-}
-
 // promptData is the full template context passed to kata_generate.tmpl.
 type promptData struct {
 	Topic  string
-	Chunks []chunkData
+	Chunks []genutil.ChunkData
 }
 
 // rawKata mirrors the JSON schema the LLM is asked to produce.
@@ -118,9 +113,9 @@ func (g *Generator) buildPrompt(topic string, records []store.Record) (string, e
 		return "", fmt.Errorf("parse template: %w", err)
 	}
 
-	chunks := make([]chunkData, 0, len(records))
+	chunks := make([]genutil.ChunkData, 0, len(records))
 	for _, r := range records {
-		chunks = append(chunks, chunkData{Text: r.Chunk.Text})
+		chunks = append(chunks, genutil.ChunkData{Text: r.Chunk.Text})
 	}
 
 	var buf bytes.Buffer

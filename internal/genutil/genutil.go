@@ -7,6 +7,12 @@ import (
 	"github.com/jazicorn/hatch/internal/store"
 )
 
+// ChunkData is the template context for a single retrieved chunk.
+// Both the quiz and kata generators embed this in their promptData structs.
+type ChunkData struct {
+	Text string
+}
+
 // DiversifyBySource picks at most one chunk per file from candidates,
 // returning up to limit results. Candidates are assumed to be ranked by
 // relevance (closest first); the first chunk seen for each file wins.

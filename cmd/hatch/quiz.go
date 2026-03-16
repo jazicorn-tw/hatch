@@ -11,9 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/jazicorn/hatch/internal/config"
 	"github.com/jazicorn/hatch/internal/quiz"
-	"github.com/jazicorn/hatch/internal/store/sqlite"
 )
 
 func newQuizCmd() *cobra.Command {
@@ -34,32 +32,13 @@ func newQuizCmd() *cobra.Command {
 }
 
 func runQuiz(ctx context.Context, topic string, count int) error {
-	cfg, err := config.Load()
+	d, err := setupDeps()
 	if err != nil {
-		return fmt.Errorf("quiz: load config: %w", err)
+		return fmt.Errorf("quiz: %w", err)
 	}
+	defer d.store.Close()
 
-	emb, err := newEmbedder(cfg)
-	if err != nil {
-		return fmt.Errorf("quiz: create embedder: %w", err)
-	}
-
-	completer, err := newLLMCompleter(cfg)
-	if err != nil {
-		return fmt.Errorf("quiz: create llm: %w", err)
-	}
-
-	dbPath, err := resolveDBPath(cfg.DBPath)
-	if err != nil {
-		return fmt.Errorf("quiz: resolve db path: %w", err)
-	}
-	st, err := sqlite.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("quiz: open store: %w", err)
-	}
-	defer st.Close()
-
-	gen := quiz.NewGenerator(emb, st, completer, quiz.GeneratorConfig{TopK: 10})
+	gen := quiz.NewGenerator(d.emb, d.store, d.llm, quiz.GeneratorConfig{TopK: 10})
 
 	label := topic
 	if label == "" {
@@ -103,7 +82,7 @@ func runQuiz(ctx context.Context, topic string, count int) error {
 	correct, total := sess.Score()
 	fmt.Printf("=== Score: %d / %d (%.0f%%) ===\n", correct, total, float64(correct)/float64(total)*100)
 
-	if err := st.SaveSession(ctx, sess); err != nil {
+	if err := d.store.SaveSession(ctx, sess); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: could not save session: %v\n", err)
 	}
 	return nil
