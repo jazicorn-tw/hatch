@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-13
+updated_date: 2026-03-16
 status:       active
 tags:         [devops, ci, config]
 description:  "GitHub Actions repository variables — what each controls and when to set it"
@@ -61,6 +61,35 @@ before the updated list is merged.
 Gates the `doctor` workflow entirely. The doctor snapshot runs on push to
 `main`/`staging`/`canary` and manual dispatch — not on PRs. Disable if the
 workflow is producing noise or consuming unnecessary CI minutes.
+
+---
+
+## SonarCloud
+
+| Variable               | Type       | Default  | Values           |
+| ---------------------- | ---------- | -------- | ---------------- |
+| `ENABLE_SONAR`         | Variable   | enabled  | `FALSE` / unset  |
+| `SONAR_ORGANIZATION`   | Variable   | —        | org slug         |
+| `SONAR_PROJECT_KEY`    | Variable   | —        | project key      |
+| `SONAR_TOKEN`          | **Secret** | —        | SonarCloud token |
+
+The `sonar` job in `ci.yml` runs after `test` passes. It generates a Go
+coverage report and runs the SonarCloud scanner. **When this job fails, CI
+fails and semantic-release does not run.**
+
+- `ENABLE_SONAR` — set to `FALSE` to skip the job entirely (e.g. before
+  SonarCloud is configured).
+- `SONAR_ORGANIZATION` — your SonarCloud organization slug (visible in the
+  sonarcloud.io URL: `https://sonarcloud.io/organizations/<slug>`).
+- `SONAR_PROJECT_KEY` — your SonarCloud project key (shown in project
+  Administration → Project Key).
+- `SONAR_TOKEN` — go to sonarcloud.io → My Account → Security → Generate
+  Token, then add it as a **Secret** (not a variable) in GitHub Settings →
+  Secrets and variables → Actions.
+
+> **Important:** disable SonarCloud automatic analysis in your project's
+> Administration → Analysis Method settings to avoid running the scanner
+> twice per commit.
 
 ---
 
@@ -131,7 +160,8 @@ RELEASE_BOT_NAMES        = github-actions[bot]
 
 Enable as the project progresses:
 
-| Milestone     | Variable to enable                                          |
-| ------------- | ----------------------------------------------------------- |
-| M1 (Go src)   | Remove `ENABLE_GO_ANALYSIS=false`                           |
-| First release | `ENABLE_SEMANTIC_RELEASE=TRUE`, `PUBLISH_DOCKER_IMAGE=TRUE` |
+| Milestone      | Variable / secret to enable                                          |
+| -------------- | -------------------------------------------------------------------- |
+| M1 (Go src)    | Remove `ENABLE_GO_ANALYSIS=false`                                    |
+| SonarCloud     | `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`, `SONAR_TOKEN` (secret)    |
+| First release  | `ENABLE_SEMANTIC_RELEASE=TRUE`, `PUBLISH_DOCKER_IMAGE=TRUE`          |

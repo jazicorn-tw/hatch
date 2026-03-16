@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-10
 updated_by:   jazicorn-tw
-updated_date: 2026-03-11
+updated_date: 2026-03-16
 status:       active
 tags:         [devops]
 description:  "Release Gating & Local Simulation"
@@ -31,12 +31,13 @@ Nothing is released by accident.
 
 ## 🔐 Release gates (high level)
 
-The release workflow is protected by **two layers**:
+The release workflow is protected by **three layers**:
 
-1. **Release execution gate**
-2. **Artifact publishing gate**
+1. **CI quality gate** — all CI jobs (including SonarCloud) must pass
+2. **Release execution gate** — `ENABLE_SEMANTIC_RELEASE` must be `TRUE`
+3. **Artifact publishing gate** — publish flags must be set
 
-Both must pass for anything to be published.
+All three must pass for anything to be published.
 
 ---
 
@@ -128,14 +129,15 @@ Individual CI jobs and steps can be disabled via repository variables without
 touching workflow files. All flags are **enabled by default** (unset = runs).
 Set to `'false'` to skip.
 
-| Variable                 | Skips                                      |
-| ------------------------ | ------------------------------------------ |
-| `ENABLE_STATIC_ANALYSIS` | Checkstyle/PMD/SpotBugs step in CI Quality |
-| `ENABLE_SONAR`           | Sonar cache + analysis steps in CI Quality |
-| `ENABLE_MD_LINT`         | Entire markdown-lint job in CI Quality     |
-| `ENABLE_DOCTOR_SNAPSHOT` | Entire doctor job in Doctor Snapshot       |
+| Variable                 | Skips                                          |
+| ------------------------ | ---------------------------------------------- |
+| `ENABLE_GO_ANALYSIS`     | `quality` and `test` jobs in CI                |
+| `ENABLE_SONAR`           | `sonar` job in CI (SonarCloud quality gate)    |
+| `ENABLE_MD_LINT`         | `markdown-lint` job in CI                      |
+| `ENABLE_DOCS_TAGS`       | `docs-tags` job in CI                          |
+| `ENABLE_DOCTOR_SNAPSHOT` | Entire `doctor` workflow                       |
 
-See `docs/environment/ci/CI_FEATURE_FLAGS.md` for full details.
+See [`docs/devops/CI_VARIABLES.md`](../CI_VARIABLES.md) for full details.
 
 ---
 
