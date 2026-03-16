@@ -67,14 +67,14 @@ Single binary, local ingestion, full TUI quiz loop
 - [x] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)
 - [x] Answer evaluator: deterministic index comparison for MCQ
 - [x] Session model + SQLite persistence; sessions tagged with topic
-- [ ] Sr-provided quiz material: `hatch quiz create --topic=<name>` (import from file)
+- [x] Sr-provided quiz material: `hatch quiz create --topic=<name>` (import from file)
 - [x] AI-generated quiz: LLM generates questions from topic + source material
 - [x] CLI: `hatch quiz --topic=<name> --count=10`
 
 ### Milestone 3b — Kata Engine ✅
 
 - [x] Kata model: `Kata{ID, Title, Description, StarterCode, Tests, Topic, Source}`
-- [ ] Sr-provided katas: `hatch kata create --topic=<name>` (import from file)
+- [x] Sr-provided katas: `hatch kata create --topic=<name>` (import from file)
 - [x] AI-generated katas: LLM generates kata prompt + test cases from topic
 - [x] Kata prompt template via `//go:embed` (`kata_generate.tmpl`)
 - [x] In-TUI code editor: `bubbles/textarea` with syntax hint

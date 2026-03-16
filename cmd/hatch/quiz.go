@@ -28,6 +28,7 @@ func newQuizCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&topic, "topic", "", "Topic to focus on (optional — omit to quiz across all ingested content)")
 	cmd.Flags().IntVar(&count, "count", 5, "Number of questions to generate")
+	cmd.AddCommand(newQuizCreateCmd())
 	return cmd
 }
 

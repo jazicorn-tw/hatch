@@ -28,6 +28,7 @@ func newKataCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&topic, "topic", "", "Topic to focus on (optional — omit to generate a general kata)")
+	cmd.AddCommand(newKataCreateCmd())
 	return cmd
 }
 
