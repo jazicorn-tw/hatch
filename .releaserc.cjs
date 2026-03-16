@@ -2,12 +2,8 @@
  * semantic-release config (JS so we can use functions + comments)
  *
  * Notes strategy:
- * - Generate "changelog notes" first (rich, hash + nice headers)
- * - Update CHANGELOG.md with those notes
- * - Generate "GitHub notes" second (cleaner / shorter)
- * - Publish GitHub Release using the GitHub notes
- *
- * This lets CHANGELOG.md be dev-traceable while GitHub Releases stay reader-friendly.
+ * - A single release-notes-generator produces notes used by both CHANGELOG.md and GitHub Release.
+ * - Using two generators would cause semantic-release to concatenate their outputs, duplicating entries.
  */
 'use strict';
 
@@ -113,20 +109,7 @@ const changelogMainTemplate = [
   '{{/each}}',
 ].join('\n');
 
-const githubMainTemplate = [
-  '## {{version}}',
-  '',
-  '{{#each commitGroups}}',
-  '### {{title}}',
-  '',
-  '{{#each commits}}',
-  '{{> commit}}',
-  '{{/each}}',
-  '',
-  '{{/each}}',
-].join('\n');
-
-/** Rich notes used for CHANGELOG.md */
+/** Writer opts shared by both CHANGELOG.md and GitHub Release */
 const changelogWriterOpts = {
   groupBy: 'type',
   commitGroupsSort,
@@ -140,26 +123,6 @@ const changelogWriterOpts = {
     '- {{#if scope}}**{{scope}}:** {{/if}}{{subject}} ({{shortHash}})\n',
 };
 
-/** Cleaner notes used for GitHub Releases */
-const githubWriterOpts = {
-  groupBy: 'type',
-  commitGroupsSort,
-  commitsSort: ['scope', 'subject'],
-
-  transform: (commit) => {
-    const c = baseTransform(commit);
-    if (!c) return;
-
-    // Remove hash-related fields so commitPartial can't accidentally use them
-    const { shortHash, ...rest } = c;
-    return rest;
-  },
-
-  mainTemplate: githubMainTemplate,
-
-  // IMPORTANT: include newline so bullets don't run together
-  commitPartial: '- {{#if scope}}**{{scope}}:** {{/if}}{{subject}}\n',
-};
 
 module.exports = {
   branches: [
@@ -191,7 +154,7 @@ module.exports = {
       },
     ],
 
-    // 2a) Generate CHANGELOG-oriented notes
+    // 2) Generate release notes (used by both CHANGELOG.md and GitHub Release)
     [
       '@semantic-release/release-notes-generator',
       {
@@ -200,21 +163,12 @@ module.exports = {
       },
     ],
 
-    // 3) Update CHANGELOG.md (uses the notes generated immediately above)
+    // 3) Update CHANGELOG.md
     [
       '@semantic-release/changelog',
       {
         changelogFile: 'CHANGELOG.md',
         changelogTitle: '# 📦 Release History',
-      },
-    ],
-
-    // 2b) Re-generate notes for GitHub Releases (cleaner)
-    [
-      '@semantic-release/release-notes-generator',
-      {
-        preset: 'conventionalcommits',
-        writerOpts: githubWriterOpts,
       },
     ],
 
