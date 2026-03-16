@@ -104,6 +104,45 @@ jobs:
       - name: Lint markdown files
         run: yarn markdownlint-cli2 '**/*.md' '#node_modules'
 
+  # ── SonarCloud analysis ────────────────────────────────────────────────────
+  # Runs after tests pass so coverage data is available.
+  # When this job fails CI fails, which prevents release.yml from triggering.
+  sonar:
+    name: SonarCloud analysis
+    runs-on: ubuntu-latest
+    if: ${{ vars.ENABLE_SONAR != 'FALSE' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    needs:
+      - test
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0 # required for blame info and new-code detection
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Generate coverage report
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: SonarCloud scan
+        uses: SonarSource/sonarcloud-github-action@ffc3010689be73b8e5ae0c57ce35968afd7909e8 # v5.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+
   # ── Frontmatter tag validation ─────────────────────────────────────────────
   docs-tags:
     name: Validate frontmatter tags
