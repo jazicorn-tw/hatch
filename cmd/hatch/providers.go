@@ -46,6 +46,21 @@ func setupDeps() (*deps, error) {
 	return &deps{cfg: cfg, emb: emb, llm: completer, store: st}, nil
 }
 
+// setupStore loads config and opens just the SQLite store, without
+// constructing an embedder or LLM. Used by commands that only need persistence.
+// The caller is responsible for calling store.Close().
+func setupStore() (*sqlite.Store, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("load config: %w", err)
+	}
+	dbPath, err := resolveDBPath(cfg.DBPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve db path: %w", err)
+	}
+	return sqlite.Open(dbPath)
+}
+
 // newLLMCompleter constructs an LLM Completer from config.
 // newEmbedder is defined in ingest.go and shared across commands.
 func newLLMCompleter(cfg *config.Config) (llm.Completer, error) {

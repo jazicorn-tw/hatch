@@ -9,9 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/jazicorn/hatch/internal/config"
 	"github.com/jazicorn/hatch/internal/kata"
-	"github.com/jazicorn/hatch/internal/store/sqlite"
 )
 
 // rawImportKata is the JSON file format for Sr-provided katas.
@@ -90,17 +88,9 @@ func runKataCreate(ctx context.Context, topic, file string) error {
 		Language:    lang,
 	}
 
-	cfg, err := config.Load()
-	if err != nil {
-		return fmt.Errorf("kata create: load config: %w", err)
-	}
-	dbPath, err := resolveDBPath(cfg.DBPath)
+	st, err := setupStore()
 	if err != nil {
 		return fmt.Errorf("kata create: %w", err)
-	}
-	st, err := sqlite.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("kata create: open store: %w", err)
 	}
 	defer st.Close()
 

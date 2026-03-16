@@ -9,9 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/jazicorn/hatch/internal/config"
 	"github.com/jazicorn/hatch/internal/quiz"
-	"github.com/jazicorn/hatch/internal/store/sqlite"
 )
 
 // rawImportQuestion is the JSON file format for Sr-provided quiz questions.
@@ -91,17 +89,9 @@ func runQuizCreate(ctx context.Context, topic, file string) error {
 		})
 	}
 
-	cfg, err := config.Load()
-	if err != nil {
-		return fmt.Errorf("quiz create: load config: %w", err)
-	}
-	dbPath, err := resolveDBPath(cfg.DBPath)
+	st, err := setupStore()
 	if err != nil {
 		return fmt.Errorf("quiz create: %w", err)
-	}
-	st, err := sqlite.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("quiz create: open store: %w", err)
 	}
 	defer st.Close()
 
