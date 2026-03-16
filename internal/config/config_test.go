@@ -67,6 +67,73 @@ func TestValidatePortOutOfRange(t *testing.T) {
 	}
 }
 
+func TestValidateSourceValid(t *testing.T) {
+	cfg := &config.Config{
+		LLMProvider:   "anthropic",
+		EmbedProvider: "ollama",
+		SSHPort:       2222,
+		HTTPPort:      8080,
+		Sources: []config.SourceConfig{
+			{Name: "docs", Path: "./docs", Type: "filesystem"},
+		},
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("expected valid config with source, got: %v", err)
+	}
+}
+
+func TestValidateSourceMissingName(t *testing.T) {
+	cfg := &config.Config{
+		LLMProvider:   "anthropic",
+		EmbedProvider: "ollama",
+		SSHPort:       2222,
+		HTTPPort:      8080,
+		Sources: []config.SourceConfig{
+			{Path: "./docs", Type: "filesystem"},
+		},
+	}
+	if cfg.Validate() == nil {
+		t.Error("expected error for source missing name")
+	}
+}
+
+func TestValidateSourceMissingPath(t *testing.T) {
+	cfg := &config.Config{
+		LLMProvider:   "anthropic",
+		EmbedProvider: "ollama",
+		SSHPort:       2222,
+		HTTPPort:      8080,
+		Sources: []config.SourceConfig{
+			{Name: "docs", Type: "filesystem"},
+		},
+	}
+	if cfg.Validate() == nil {
+		t.Error("expected error for source missing path")
+	}
+}
+
+func TestValidateSourceUnknownType(t *testing.T) {
+	cfg := &config.Config{
+		LLMProvider:   "anthropic",
+		EmbedProvider: "ollama",
+		SSHPort:       2222,
+		HTTPPort:      8080,
+		Sources: []config.SourceConfig{
+			{Name: "docs", Path: "./docs", Type: "s3"},
+		},
+	}
+	if cfg.Validate() == nil {
+		t.Error("expected error for unknown source type")
+	}
+}
+
+func TestInit(t *testing.T) {
+	// Init writes a new config or reports the file already exists. Both are non-error.
+	if err := config.Init(); err != nil {
+		t.Errorf("Init: %v", err)
+	}
+}
+
 func TestLoadEnvOverride(t *testing.T) {
 	t.Setenv("HATCH_LLM_PROVIDER", "openai")
 	t.Setenv("HATCH_EMBED_PROVIDER", "openai")

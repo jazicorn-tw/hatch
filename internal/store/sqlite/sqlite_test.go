@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	testDB  = "test.db"
-	errOpen = "Open: %v"
+	testDB      = "test.db"
+	errOpen     = "Open: %v"
+	srcToDelete = "to-delete"
 
 	// vecDim must match the dimension declared in 002_vec.sql (float[768]).
 	vecDim = 768
@@ -155,14 +156,14 @@ func TestDeleteBySource(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()
 	records := []store.Record{
-		{Chunk: chunker.Chunk{ID: "d1", Source: "to-delete", Text: "bye"}, Embedding: unitVec(0)},
+		{Chunk: chunker.Chunk{ID: "d1", Source: srcToDelete, Text: "bye"}, Embedding: unitVec(0)},
 		{Chunk: chunker.Chunk{ID: "d2", Source: "keep", Text: "stay"}, Embedding: unitVec(1)},
 	}
 	if err := s.Upsert(ctx, records); err != nil {
 		t.Fatalf("Upsert: %v", err)
 	}
 
-	if err := s.DeleteBySource(ctx, "to-delete"); err != nil {
+	if err := s.DeleteBySource(ctx, srcToDelete); err != nil {
 		t.Fatalf("DeleteBySource: %v", err)
 	}
 
@@ -172,7 +173,7 @@ func TestDeleteBySource(t *testing.T) {
 		t.Fatalf("Search after delete: %v", err)
 	}
 	for _, r := range results {
-		if r.Chunk.Source == "to-delete" {
+		if r.Chunk.Source == srcToDelete {
 			t.Errorf("chunk from deleted source still present: %+v", r.Chunk)
 		}
 	}
@@ -194,5 +195,32 @@ func TestEncodeDecodeVec(t *testing.T) {
 func TestDecodeVecOddBytes(t *testing.T) {
 	if got := decodeVec([]byte{1, 2, 3}); got != nil {
 		t.Errorf("expected nil for odd-length input, got %v", got)
+	}
+}
+
+func TestUpsertWithNoEmbedding(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+
+	// A record with a nil embedding should be stored without error.
+	records := []store.Record{
+		{Chunk: chunker.Chunk{ID: "no-emb", Source: "test", Text: "hello"}},
+	}
+	if err := s.Upsert(ctx, records); err != nil {
+		t.Fatalf("Upsert with nil embedding: %v", err)
+	}
+}
+
+func TestEncodeVecEmpty(t *testing.T) {
+	b := encodeVec(nil)
+	if len(b) != 0 {
+		t.Errorf("expected empty bytes for nil vec, got %d bytes", len(b))
+	}
+}
+
+func TestDecodeVecEmpty(t *testing.T) {
+	v := decodeVec([]byte{})
+	if len(v) != 0 {
+		t.Errorf("expected empty slice for empty bytes, got %d", len(v))
 	}
 }

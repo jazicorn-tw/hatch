@@ -2,6 +2,7 @@ package fake_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/jazicorn/hatch/internal/embedder/fake"
@@ -31,5 +32,13 @@ func TestEmbedDefaultDim(t *testing.T) {
 	}
 	if len(vecs[0]) != 4 {
 		t.Errorf("expected default dim 4, got %d", len(vecs[0]))
+	}
+}
+
+func TestEmbedError(t *testing.T) {
+	e := &fake.Embedder{Err: errors.New("injected error")}
+	_, err := e.Embed(context.Background(), []string{"x"})
+	if err == nil {
+		t.Error("expected error from Embed when Err is set")
 	}
 }
