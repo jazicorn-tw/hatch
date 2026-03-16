@@ -3959,6 +3959,7 @@ __metadata:
     "@semantic-release/release-notes-generator": "npm:^12.1.0"
     conventional-changelog-conventionalcommits: "npm:^9.1.0"
     cosmiconfig: "npm:^9.0.0"
+    js-yaml: "npm:^4.1.0"
     markdownlint: "npm:^0.40.0"
     markdownlint-cli2: "npm:^0.21.0"
     semantic-release: "npm:^22.0.12"
