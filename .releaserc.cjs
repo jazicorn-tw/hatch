@@ -11,6 +11,17 @@
  */
 'use strict';
 
+const fs   = require('fs');
+const yaml = require('js-yaml');
+
+// Load valid scopes from the unified taxonomy in tags.yml.
+// Both "both" and "scopes" entries are valid commit scopes.
+const _tagDef     = yaml.load(fs.readFileSync(new URL('.github/tags.yml', `file://${__dirname}/`), 'utf8'));
+const validScopes = new Set([
+  ...(_tagDef.tags.both   || []),
+  ...(_tagDef.tags.scopes || []),
+]);
+
 const OTHER_SECTION = '🧩 Other';
 
 const SECTION_TITLES = {
@@ -46,13 +57,17 @@ function baseTransform(commit) {
   const subject = (commit.subject || '').trim();
   if (!subject) return;
 
+  const scope = (commit.scope || '').trim();
+  const flaggedSubject =
+    scope && !validScopes.has(scope) ? `${subject} ⚠️ unknown-scope` : subject;
+
   const rawType = (commit.type || '').trim();
   const normalizedType =
     rawType && ALLOWED_TYPES_FOR_NOTES.has(rawType) ? rawType : 'other';
 
   return {
     ...commit,
-    subject,
+    subject: flaggedSubject,
     type:
       normalizedType === 'other'
         ? OTHER_SECTION
