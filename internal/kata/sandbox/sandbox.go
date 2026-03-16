@@ -72,9 +72,23 @@ func run(ctx context.Context, k kata.Kata, solution, tmpDir string, timeout time
 	}
 }
 
+// lookPath resolves a command name to its absolute path, returning an error if not found.
+func lookPath(name string) (string, error) {
+	p, err := exec.LookPath(name)
+	if err != nil {
+		return "", fmt.Errorf("sandbox: %q not found in PATH: %w", name, err)
+	}
+	return p, nil
+}
+
 // ---- Go ----
 
 func runGo(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte, error) {
+	goBin, err := lookPath("go")
+	if err != nil {
+		return nil, err
+	}
+
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.go"), []byte(solution), 0600); err != nil {
 		return nil, fmt.Errorf("sandbox: write solution: %w", err)
 	}
@@ -92,7 +106,7 @@ func runGo(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte, e
 		return nil, fmt.Errorf("sandbox: write go.mod: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "go", "test", "-v", "./...")
+	cmd := exec.CommandContext(ctx, goBin, "test", "-v", "./...")
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(),
 		"GOPROXY=off",
@@ -116,6 +130,11 @@ func extractGoPackage(src string) string {
 // ---- Python ----
 
 func runPython(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte, error) {
+	python, err := lookPath("python3")
+	if err != nil {
+		return nil, err
+	}
+
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.py"), []byte(solution), 0600); err != nil {
 		return nil, fmt.Errorf("sandbox: write solution: %w", err)
 	}
@@ -123,7 +142,7 @@ func runPython(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byt
 		return nil, fmt.Errorf("sandbox: write tests: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "python3", "-m", "pytest", "test_kata.py", "-v", "--tb=short")
+	cmd := exec.CommandContext(ctx, python, "-m", "pytest", "test_kata.py", "-v", "--tb=short")
 	cmd.Dir = tmpDir
 	return cmd.CombinedOutput()
 }
@@ -131,6 +150,11 @@ func runPython(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byt
 // ---- JavaScript ----
 
 func runJavaScript(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte, error) {
+	npx, err := lookPath("npx")
+	if err != nil {
+		return nil, err
+	}
+
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.js"), []byte(solution), 0600); err != nil {
 		return nil, fmt.Errorf("sandbox: write solution: %w", err)
 	}
@@ -144,7 +168,7 @@ func runJavaScript(ctx context.Context, k kata.Kata, solution, tmpDir string) ([
 		return nil, fmt.Errorf("sandbox: write package.json: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "npx", "--yes", "jest", "--no-coverage", "kata.test.js")
+	cmd := exec.CommandContext(ctx, npx, "--yes", "jest", "--no-coverage", "kata.test.js")
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), "CI=true")
 	return cmd.CombinedOutput()
@@ -153,6 +177,15 @@ func runJavaScript(ctx context.Context, k kata.Kata, solution, tmpDir string) ([
 // ---- Java ----
 
 func runJava(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte, error) {
+	javac, err := lookPath("javac")
+	if err != nil {
+		return nil, err
+	}
+	java, err := lookPath("java")
+	if err != nil {
+		return nil, err
+	}
+
 	if err := os.WriteFile(filepath.Join(tmpDir, "Kata.java"), []byte(solution), 0600); err != nil {
 		return nil, fmt.Errorf("sandbox: write solution: %w", err)
 	}
@@ -161,14 +194,14 @@ func runJava(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte,
 	}
 
 	// Compile.
-	compile := exec.CommandContext(ctx, "javac", "Kata.java", "KataTest.java")
+	compile := exec.CommandContext(ctx, javac, "Kata.java", "KataTest.java")
 	compile.Dir = tmpDir
 	if out, err := compile.CombinedOutput(); err != nil {
 		return out, fmt.Errorf("sandbox: javac: %w", err)
 	}
 
 	// Run with JUnit 4 console launcher (assumes junit-platform-console-standalone on PATH or CLASSPATH).
-	runCmd := exec.CommandContext(ctx, "java", "-cp", ".", "org.junit.runner.JUnitCore", "KataTest")
+	runCmd := exec.CommandContext(ctx, java, "-cp", ".", "org.junit.runner.JUnitCore", "KataTest")
 	runCmd.Dir = tmpDir
 	return runCmd.CombinedOutput()
 }
