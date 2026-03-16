@@ -58,18 +58,18 @@ Single binary, local ingestion, full TUI quiz loop
 - [x] sqlite-vec store: `Upsert`, cosine KNN `Search`, `DeleteBySource`
 - [x] CLI: `hatch ingest --source=<name>`, `hatch sources list/remove`
 
-### Milestone 3 — Quiz Engine
+### Milestone 3 — Quiz Engine ✅
 
-- [ ] Anthropic LLM (`claude-sonnet-4-6` default)
-- [ ] Google Gemini LLM provider: `gemini-2.0-flash` default; `GEMINI_API_KEY` env var
-- [ ] Question types: `Question{Text, Options[4], CorrectIndex, Explanation, SourceChunks}`
-- [ ] Quiz generator: topic probe → `Store.Search(TopK=5)` → LLM MCQ prompt
-- [ ] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)
-- [ ] Answer evaluator: deterministic index comparison for MCQ
-- [ ] Session model + SQLite persistence; sessions tagged with topic
+- [x] Anthropic LLM (`claude-sonnet-4-6` default)
+- [x] Google Gemini LLM provider: `gemini-2.0-flash` default; `GEMINI_API_KEY` env var
+- [x] Question types: `Question{Text, Options[4], CorrectIndex, Explanation, SourceChunks}`
+- [x] Quiz generator: topic probe → `Store.Search(TopK=5)` → LLM MCQ prompt
+- [x] Prompt templates via `//go:embed` (`question_mcq.tmpl`, `question_explain.tmpl`)
+- [x] Answer evaluator: deterministic index comparison for MCQ
+- [x] Session model + SQLite persistence; sessions tagged with topic
 - [ ] Sr-provided quiz material: `hatch quiz create --topic=<name>` (import from file)
-- [ ] AI-generated quiz: LLM generates questions from topic + source material
-- [ ] CLI: `hatch quiz --topic=<name> --count=10`
+- [x] AI-generated quiz: LLM generates questions from topic + source material
+- [x] CLI: `hatch quiz --topic=<name> --count=10`
 
 ### Milestone 3b — Kata Engine ✅
 
