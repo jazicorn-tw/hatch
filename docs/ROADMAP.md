@@ -2,7 +2,7 @@
 created_by:   jazicorn-tw
 created_date: 2026-03-11
 updated_by:   jazicorn-tw
-updated_date: 2026-03-15
+updated_date: 2026-03-16
 status:       active
 tags:         [planning]
 description:  "Hatch development roadmap — versioned milestones"
@@ -71,17 +71,17 @@ Single binary, local ingestion, full TUI quiz loop
 - [ ] AI-generated quiz: LLM generates questions from topic + source material
 - [ ] CLI: `hatch quiz --topic=<name> --count=10`
 
-### Milestone 3b — Kata Engine
+### Milestone 3b — Kata Engine ✅
 
-- [ ] Kata model: `Kata{ID, Title, Description, StarterCode, Tests, Topic, Source}`
+- [x] Kata model: `Kata{ID, Title, Description, StarterCode, Tests, Topic, Source}`
 - [ ] Sr-provided katas: `hatch kata create --topic=<name>` (import from file)
-- [ ] AI-generated katas: LLM generates kata prompt + test cases from topic
-- [ ] Kata prompt template via `//go:embed` (`kata_generate.tmpl`)
-- [ ] In-TUI code editor: `bubbles/textarea` with syntax hint
-- [ ] Kata evaluator: run user solution against test cases; pass/fail per test
-- [ ] Sandbox execution: subprocess with timeout + resource limits; no network access
-- [ ] Kata session model + SQLite persistence; sessions tagged with topic
-- [ ] CLI: `hatch kata --topic=<name>`
+- [x] AI-generated katas: LLM generates kata prompt + test cases from topic
+- [x] Kata prompt template via `//go:embed` (`kata_generate.tmpl`)
+- [x] In-TUI code editor: `bubbles/textarea` with syntax hint
+- [x] Kata evaluator: run user solution against test cases; pass/fail per test
+- [x] Sandbox execution: subprocess with timeout + resource limits; no network access
+- [x] Kata session model + SQLite persistence; sessions tagged with topic
+- [x] CLI: `hatch kata --topic=<name>`
 
 ### Milestone 4 — TUI
 

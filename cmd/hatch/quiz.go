@@ -12,13 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jazicorn/hatch/internal/config"
-	"github.com/jazicorn/hatch/internal/embedder"
-	gemiembed "github.com/jazicorn/hatch/internal/embedder/gemini"
-	ollamaembed "github.com/jazicorn/hatch/internal/embedder/ollama"
-	oaiembed "github.com/jazicorn/hatch/internal/embedder/openai"
-	"github.com/jazicorn/hatch/internal/llm"
-	anthropicllm "github.com/jazicorn/hatch/internal/llm/anthropic"
-	gemillm "github.com/jazicorn/hatch/internal/llm/gemini"
 	"github.com/jazicorn/hatch/internal/quiz"
 	"github.com/jazicorn/hatch/internal/store/sqlite"
 )
@@ -46,7 +39,7 @@ func runQuiz(ctx context.Context, topic string, count int) error {
 		return fmt.Errorf("quiz: load config: %w", err)
 	}
 
-	emb, err := newQuizEmbedder(cfg)
+	emb, err := newEmbedder(cfg)
 	if err != nil {
 		return fmt.Errorf("quiz: create embedder: %w", err)
 	}
@@ -127,43 +120,5 @@ func promptAnswer(r *bufio.Reader, optionCount int) int {
 			return n - 1 // convert to 0-based
 		}
 		fmt.Printf("Please enter a number between 1 and %d.\n", optionCount)
-	}
-}
-
-// newQuizEmbedder constructs the embedder based on config (same logic as ingest).
-func newQuizEmbedder(cfg *config.Config) (embedder.Embedder, error) {
-	switch cfg.EmbedProvider {
-	case "gemini":
-		apiKey := cfg.GeminiAPIKey
-		if apiKey == "" {
-			apiKey = os.Getenv("GEMINI_API_KEY")
-		}
-		return gemiembed.New(gemiembed.Config{APIKey: apiKey})
-	case "ollama":
-		return ollamaembed.New(ollamaembed.Config{})
-	default: // "openai" and unset
-		apiKey := cfg.OpenAIAPIKey
-		if apiKey == "" {
-			apiKey = os.Getenv("OPENAI_API_KEY")
-		}
-		return oaiembed.New(oaiembed.Config{APIKey: apiKey})
-	}
-}
-
-// newLLMCompleter constructs the LLM completer based on config.
-func newLLMCompleter(cfg *config.Config) (llm.Completer, error) {
-	switch cfg.LLMProvider {
-	case "gemini":
-		apiKey := cfg.GeminiAPIKey
-		if apiKey == "" {
-			apiKey = os.Getenv("GEMINI_API_KEY")
-		}
-		return gemillm.New(gemillm.Config{APIKey: apiKey})
-	default: // "anthropic" and unset
-		apiKey := cfg.AnthropicAPIKey
-		if apiKey == "" {
-			apiKey = os.Getenv("ANTHROPIC_API_KEY")
-		}
-		return anthropicllm.New(anthropicllm.Config{APIKey: apiKey})
 	}
 }

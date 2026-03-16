@@ -1,0 +1,26 @@
+You are a coding kata generator. Using the reference material below, create a code kata
+(a small, focused coding exercise) for a junior developer learning about "{{.Topic}}".
+
+Reference material:
+{{range .Chunks}}---
+{{.Text}}
+{{end}}
+Requirements:
+- The kata must be completable in 10–20 minutes
+- Include a clear description of what the function/method should do
+- Provide starter code with the function signature but an empty or stub body
+- Provide test cases that verify correctness (use the idiomatic test style for the language)
+- Infer the programming language from the reference material (Go, Python, JavaScript, or Java)
+- If the reference material is in Go, write Go; if Python, write Python; etc.
+
+Respond with ONLY a JSON object in this exact format (no markdown fences, no commentary):
+{
+  "title": "Short kata title",
+  "description": "Clear description of what the candidate must implement. Include examples.",
+  "language": "go",
+  "starter_code": "package kata\n\n// Implement the function below.\nfunc Solve(input string) string {\n\t// TODO\n\treturn \"\"\n}",
+  "tests": "package kata\n\nimport \"testing\"\n\nfunc TestSolve(t *testing.T) {\n\tif got := Solve(\"hello\"); got != \"expected\" {\n\t\tt.Errorf(\"got %q, want %q\", got, \"expected\")\n\t}\n}"
+}
+
+The "language" field must be one of: go, python, javascript, java.
+Starter code and tests must be valid, runnable source code for the chosen language.

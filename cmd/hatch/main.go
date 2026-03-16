@@ -27,6 +27,7 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newIngestCmd())
 	root.AddCommand(newSourcesCmd())
 	root.AddCommand(newQuizCmd())
+	root.AddCommand(newKataCmd())
 	return root
 }
 
