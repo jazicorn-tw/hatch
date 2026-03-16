@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, staging, canary ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   doctor:
     runs-on: ubuntu-latest

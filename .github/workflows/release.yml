@@ -43,6 +43,9 @@ concurrency:
       !startsWith(github.ref, 'refs/tags/')
     }}
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ── Docker build check (CI only, no push) ────────────────────────────────────
   docker-build:
@@ -189,10 +192,10 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "::endgroup::"
 
-      - name: Set up Node 20
+      - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
 
       - name: Install semantic-release deps
