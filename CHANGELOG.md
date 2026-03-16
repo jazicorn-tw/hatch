@@ -1,5 +1,27 @@
 # 📦 Release History
 
+## 📦 Release 0.5.0
+
+### ✨ Features
+
+- **kata:** implement Sr-provided quiz and kata import commands (ac02ef2)
+
+### 🤖 CI / CD
+
+- **actions:** add missing permissions to validate-helm job (940a729)
+- **actions:** gate releases on SonarCloud quality gate (da4b067)
+- **actions:** opt into Node.js 24 runner and upgrade Node to 22 (0d1e398)
+- **actions:** replace deprecated sonarcloud-github-action with sonarqube-scan-action v7.0.0 (fb42464)
+
+### ♻️ Refactors
+
+- **kata:** extract setupStore helper to eliminate duplicate store-opening code (59ee69d)
+- **qa:** reduce duplicated lines across cmd, internal/genutil, and fs tests (2e05d7f)
+
+### 📝 Docs
+
+- **ci:** document SonarCloud quality gate setup and CI job table (2c7fd7c)
+
 ## 📦 Release 0.4.0
 
 ### ✨ Features
@@ -162,4 +184,3 @@
 - update roadmap, docs template, and tooling docs (00c777d)
 - update roadmap, readme, env examples, and CI docs (f3fa6b1)
 - update stale Java/Spring references for Go stack (3358225)
-
