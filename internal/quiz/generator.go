@@ -6,10 +6,10 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"text/template"
 
 	"github.com/jazicorn/hatch/internal/embedder"
+	"github.com/jazicorn/hatch/internal/genutil"
 	"github.com/jazicorn/hatch/internal/llm"
 	"github.com/jazicorn/hatch/internal/store"
 )
@@ -87,7 +87,7 @@ func (g *Generator) Generate(ctx context.Context, topic string, count int) ([]Qu
 	if err != nil {
 		return nil, fmt.Errorf("quiz generator: search: %w", err)
 	}
-	records := diversifyBySource(candidates, g.topK)
+	records := genutil.DiversifyBySource(candidates, g.topK)
 
 	// 3. Build prompt.
 	prompt, chunkIDs, err := g.buildPrompt(topic, count, records)
@@ -138,7 +138,7 @@ func (g *Generator) buildPrompt(topic string, count int, records []store.Record)
 // parseQuestions extracts Question values from the LLM's JSON response.
 // The LLM may wrap the JSON in a markdown code fence — this is stripped.
 func parseQuestions(raw string, chunkIDs []string) ([]Question, error) {
-	cleaned := stripMarkdownFence(raw)
+	cleaned := genutil.StripMarkdownFence(raw)
 
 	var raws []rawQuestion
 	if err := json.Unmarshal([]byte(cleaned), &raws); err != nil {
@@ -165,50 +165,4 @@ func parseQuestions(raw string, chunkIDs []string) ([]Question, error) {
 		})
 	}
 	return questions, nil
-}
-
-// diversifyBySource picks at most one chunk per file from candidates,
-// returning up to limit results. Candidates are assumed to be ranked by
-// relevance (closest first); the first chunk seen for each file wins.
-// File identity is derived from the chunk ID by stripping the trailing "#N" index.
-func diversifyBySource(candidates []store.Record, limit int) []store.Record {
-	seen := make(map[string]bool, limit)
-	out := make([]store.Record, 0, limit)
-	for _, r := range candidates {
-		file := chunkFile(r.Chunk.ID)
-		if seen[file] {
-			continue
-		}
-		seen[file] = true
-		out = append(out, r)
-		if len(out) == limit {
-			break
-		}
-	}
-	return out
-}
-
-// chunkFile returns the file path portion of a chunk ID (everything before the last "#").
-func chunkFile(id string) string {
-	if i := strings.LastIndexByte(id, '#'); i >= 0 {
-		return id[:i]
-	}
-	return id
-}
-
-// stripMarkdownFence removes ```json ... ``` or ``` ... ``` wrappers if present.
-func stripMarkdownFence(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "```") {
-		// Remove opening fence line.
-		if idx := strings.IndexByte(s, '\n'); idx >= 0 {
-			s = s[idx+1:]
-		}
-		// Remove closing fence.
-		if idx := strings.LastIndex(s, "```"); idx >= 0 {
-			s = s[:idx]
-		}
-		s = strings.TrimSpace(s)
-	}
-	return s
 }

@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/jazicorn/hatch/internal/embedder"
+	"github.com/jazicorn/hatch/internal/genutil"
 	"github.com/jazicorn/hatch/internal/llm"
 	"github.com/jazicorn/hatch/internal/store"
 )
@@ -84,7 +85,7 @@ func (g *Generator) Generate(ctx context.Context, topic string) (*Kata, error) {
 	if err != nil {
 		return nil, fmt.Errorf("kata generator: search: %w", err)
 	}
-	records := diversifyBySource(candidates, g.topK)
+	records := genutil.DiversifyBySource(candidates, g.topK)
 
 	// 3. Build prompt.
 	prompt, err := g.buildPrompt(topic, records)
@@ -131,7 +132,7 @@ func (g *Generator) buildPrompt(topic string, records []store.Record) (string, e
 
 // parseKata extracts a Kata from the LLM's JSON response.
 func parseKata(raw, topic string) (*Kata, error) {
-	cleaned := stripMarkdownFence(raw)
+	cleaned := genutil.StripMarkdownFence(raw)
 
 	var rk rawKata
 	if err := json.Unmarshal([]byte(cleaned), &rk); err != nil {
@@ -154,45 +155,4 @@ func parseKata(raw, topic string) (*Kata, error) {
 		Tests:       rk.Tests,
 		Topic:       topic,
 	}, nil
-}
-
-// diversifyBySource picks at most one chunk per file from candidates, up to limit.
-func diversifyBySource(candidates []store.Record, limit int) []store.Record {
-	seen := make(map[string]bool, limit)
-	out := make([]store.Record, 0, limit)
-	for _, r := range candidates {
-		file := chunkFile(r.Chunk.ID)
-		if seen[file] {
-			continue
-		}
-		seen[file] = true
-		out = append(out, r)
-		if len(out) == limit {
-			break
-		}
-	}
-	return out
-}
-
-// chunkFile returns the file path portion of a chunk ID (everything before the last "#").
-func chunkFile(id string) string {
-	if i := strings.LastIndexByte(id, '#'); i >= 0 {
-		return id[:i]
-	}
-	return id
-}
-
-// stripMarkdownFence removes ```json...``` or ```...``` wrappers if present.
-func stripMarkdownFence(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "```") {
-		if idx := strings.IndexByte(s, '\n'); idx >= 0 {
-			s = s[idx+1:]
-		}
-		if idx := strings.LastIndex(s, "```"); idx >= 0 {
-			s = s[:idx]
-		}
-		s = strings.TrimSpace(s)
-	}
-	return s
 }
