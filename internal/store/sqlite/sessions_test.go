@@ -76,6 +76,17 @@ func TestSaveSessionUnansweredQuestions(t *testing.T) {
 	}
 }
 
+func TestSaveSessionCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	sess := quiz.NewSession("sess-err", "go")
+	err := s.SaveSession(ctx, sess)
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
 func TestSaveSessionNegativeAnswer(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()

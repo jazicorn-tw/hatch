@@ -110,6 +110,28 @@ func TestSaveQuestionBankReplaces(t *testing.T) {
 	}
 }
 
+func TestSaveQuestionBankCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := s.SaveQuestionBank(ctx, "go", []quiz.Question{
+		{ID: "q1", Text: "Q?", Options: [4]string{"a", "b", "c", "d"}, CorrectIndex: 0},
+	})
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
+func TestListQuestionBankCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := s.ListQuestionBank(ctx, "go")
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
 func TestListQuestionBankFiltersByTopic(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()

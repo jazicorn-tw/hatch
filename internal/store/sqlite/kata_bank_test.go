@@ -103,6 +103,27 @@ func TestSaveKataReplaces(t *testing.T) {
 	}
 }
 
+func TestSaveKataCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	k := &kata.Kata{ID: "x", Topic: "go", Language: kata.Go}
+	err := s.SaveKata(ctx, k)
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
+func TestListKatasCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := s.ListKatas(ctx, "go")
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
 func TestListKatasFiltersByTopic(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()

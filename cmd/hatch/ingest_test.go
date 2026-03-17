@@ -1,10 +1,12 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/jazicorn/hatch/internal/config"
+	"github.com/jazicorn/hatch/internal/pipeline"
 	"github.com/jazicorn/hatch/internal/source"
 )
 
@@ -146,5 +148,110 @@ func TestDispatchChunkerMDX(t *testing.T) {
 	}
 	if len(chunks) == 0 {
 		t.Error("expected at least one chunk for MDX file")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// newEmbedder
+// ---------------------------------------------------------------------------
+
+func TestNewEmbedderOllama(t *testing.T) {
+	cfg := &config.Config{EmbedProvider: "ollama"}
+	emb, err := newEmbedder(cfg)
+	if err != nil {
+		t.Fatalf("newEmbedder ollama: %v", err)
+	}
+	if emb == nil {
+		t.Fatal("expected non-nil embedder")
+	}
+}
+
+func TestNewEmbedderGeminiWithKey(t *testing.T) {
+	cfg := &config.Config{EmbedProvider: "gemini", GeminiAPIKey: "test-key"}
+	emb, err := newEmbedder(cfg)
+	if err != nil {
+		t.Fatalf("newEmbedder gemini: %v", err)
+	}
+	if emb == nil {
+		t.Fatal("expected non-nil embedder")
+	}
+}
+
+func TestNewEmbedderGeminiNoKey(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+	cfg := &config.Config{EmbedProvider: "gemini", GeminiAPIKey: ""}
+	_, err := newEmbedder(cfg)
+	if err == nil {
+		t.Error("expected error when no gemini key provided")
+	}
+}
+
+func TestNewEmbedderOpenAIWithKey(t *testing.T) {
+	cfg := &config.Config{EmbedProvider: "openai", OpenAIAPIKey: "test-key"}
+	emb, err := newEmbedder(cfg)
+	if err != nil {
+		t.Fatalf("newEmbedder openai: %v", err)
+	}
+	if emb == nil {
+		t.Fatal("expected non-nil embedder")
+	}
+}
+
+func TestNewEmbedderDefaultIsOpenAI(t *testing.T) {
+	// Unknown provider falls to default (openai).
+	t.Setenv("OPENAI_API_KEY", "")
+	cfg := &config.Config{EmbedProvider: "unknown", OpenAIAPIKey: ""}
+	_, err := newEmbedder(cfg)
+	if err == nil {
+		t.Error("expected error when no openai key provided for default")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// drainProgressBar
+// ---------------------------------------------------------------------------
+
+func TestDrainProgressBar(t *testing.T) {
+	progressCh := make(chan pipeline.Progress, 4)
+	done := drainProgressBar("test-source", progressCh)
+	progressCh <- pipeline.Progress{Done: 1, Total: 5}
+	progressCh <- pipeline.Progress{Done: 5, Total: 5}
+	close(progressCh)
+	<-done // wait for goroutine to exit
+}
+
+// ---------------------------------------------------------------------------
+// resolveDBPath — MkdirAll error
+// ---------------------------------------------------------------------------
+
+func TestResolveDBPathMkdirError(t *testing.T) {
+	// /dev/null is a character device, so MkdirAll("/dev/null/sub") fails.
+	_, err := resolveDBPath("/dev/null/sub/hatch.db")
+	if err == nil {
+		t.Error("expected error when parent directory cannot be created")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// newIngestCmd — RunE closure
+// ---------------------------------------------------------------------------
+
+func TestNewIngestCmdRunE(t *testing.T) {
+	// Trigger the RunE closure body with a malformed config so config.Load()
+	// returns an error immediately.
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte("key: [unclosed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newIngestCmd()
+	_ = cmd.Flags().Set("source", "docs")
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Error("expected error from RunE when config is malformed")
 	}
 }

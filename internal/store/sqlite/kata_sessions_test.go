@@ -67,6 +67,17 @@ func TestSaveKataSessionFailed(t *testing.T) {
 	}
 }
 
+func TestSaveKataSessionCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	sess := &kata.KataSession{ID: "ks-err", Topic: "go", Language: kata.Go}
+	err := s.SaveKataSession(ctx, sess)
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
 func TestSaveKataSessionZeroEndedAt(t *testing.T) {
 	s := openTestStore(t)
 	ctx := context.Background()

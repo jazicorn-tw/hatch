@@ -104,3 +104,20 @@ func TestChunkSourcePropagated(t *testing.T) {
 		}
 	}
 }
+
+func TestChunkEmptyPreamble(t *testing.T) {
+	// Empty lines before the first heading form a preamble section whose
+	// text trims to ""; it should be silently skipped.
+	c := markdown.New()
+	chunks, err := c.Chunk(doc("\n\n# Title\nbody text"))
+	if err != nil {
+		t.Fatalf("Chunk: %v", err)
+	}
+	// Only the "# Title" section should appear; the blank preamble is dropped.
+	if len(chunks) != 1 {
+		t.Fatalf("want 1 chunk (preamble skipped), got %d", len(chunks))
+	}
+	if chunks[0].Metadata["heading"] != "Title" {
+		t.Errorf("want heading=Title, got %q", chunks[0].Metadata["heading"])
+	}
+}

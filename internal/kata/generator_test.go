@@ -7,8 +7,30 @@ import (
 
 	embfake "github.com/jazicorn/hatch/internal/embedder/fake"
 	llmfake "github.com/jazicorn/hatch/internal/llm/fake"
+	"github.com/jazicorn/hatch/internal/store"
 	"github.com/jazicorn/hatch/internal/store/memory"
 )
+
+// emptyVecEmbedder returns an empty (non-nil) slice with no error.
+type emptyVecEmbedder struct{}
+
+func (e *emptyVecEmbedder) Embed(_ context.Context, _ []string) ([][]float32, error) {
+	return [][]float32{}, nil
+}
+
+// errSearchStore returns an error from Search.
+type errSearchStore struct{ *memory.Store }
+
+func (s *errSearchStore) Search(_ context.Context, _ []float32, _ int) ([]store.Record, error) {
+	return nil, errors.New("search failed")
+}
+
+// errCompleter always returns an error from Complete.
+type errCompleter struct{}
+
+func (c *errCompleter) Complete(_ context.Context, _ string) (string, error) {
+	return "", errors.New("llm failed")
+}
 
 // ---------------------------------------------------------------------------
 // parseKata (internal)
@@ -159,5 +181,42 @@ func TestGeneratorLLMError(t *testing.T) {
 	_, err := g.Generate(context.Background(), "go")
 	if err == nil {
 		t.Error("expected error when LLM returns non-JSON")
+	}
+}
+
+func TestGeneratorEmptyVectors(t *testing.T) {
+	// Embedder returns empty slice (no error) → Generate should return error.
+	g := NewGenerator(&emptyVecEmbedder{}, memory.New(), &llmfake.LLM{}, GeneratorConfig{})
+	_, err := g.Generate(context.Background(), "go")
+	if err == nil {
+		t.Error("expected error when embedder returns no vectors")
+	}
+}
+
+func TestGeneratorSearchError(t *testing.T) {
+	g := NewGenerator(
+		&embfake.Embedder{Dim: 4},
+		&errSearchStore{Store: memory.New()},
+		&llmfake.LLM{},
+		GeneratorConfig{},
+	)
+	_, err := g.Generate(context.Background(), "go")
+	if err == nil {
+		t.Error("expected error when store search fails")
+	}
+}
+
+func TestGeneratorLLMCompleteError(t *testing.T) {
+	validJSON := `{"title":"T","description":"D","language":"go","starter_code":"","tests":""}`
+	_ = validJSON
+	g := NewGenerator(
+		&embfake.Embedder{Dim: 4},
+		memory.New(),
+		&errCompleter{},
+		GeneratorConfig{},
+	)
+	_, err := g.Generate(context.Background(), "go")
+	if err == nil {
+		t.Error("expected error when LLM complete fails")
 	}
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -65,5 +67,28 @@ func TestPromptAnswerWhitespaceTrimmed(t *testing.T) {
 	got := promptAnswer(r, 4)
 	if got != 2 {
 		t.Errorf("expected 2, got %d", got)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// newQuizCmd — RunE closure
+// ---------------------------------------------------------------------------
+
+func TestNewQuizCmdRunE(t *testing.T) {
+	// Trigger the RunE closure body by calling it with a malformed config so
+	// setupDeps() returns an error immediately.
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte("key: [unclosed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newQuizCmd()
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Error("expected error from RunE when config is malformed")
 	}
 }

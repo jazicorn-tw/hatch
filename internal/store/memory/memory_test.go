@@ -45,3 +45,10 @@ func TestSearchEmpty(t *testing.T) {
 		t.Errorf("expected 0 results, got %d", len(results))
 	}
 }
+
+func TestClose(t *testing.T) {
+	s := memory.New()
+	if err := s.Close(); err != nil {
+		t.Errorf("Close: %v", err)
+	}
+}

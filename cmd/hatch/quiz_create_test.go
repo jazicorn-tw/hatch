@@ -110,3 +110,58 @@ func TestRunQuizCreateIndexOutOfRange(t *testing.T) {
 		t.Error("expected error for out-of-range correct_index")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// newQuizCreateCmd — RunE closure
+// ---------------------------------------------------------------------------
+
+func TestNewQuizCreateCmdRunE(t *testing.T) {
+	// Calling RunE directly exercises the closure body.
+	cmd := newQuizCreateCmd()
+	_ = cmd.Flags().Set("topic", "go")
+	_ = cmd.Flags().Set("file", "/nonexistent/questions.json")
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Error("expected error from RunE")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// runQuizCreate — setupStore and save error paths
+// ---------------------------------------------------------------------------
+
+func TestRunQuizCreateSetupStoreError(t *testing.T) {
+	// Malformed config causes setupStore() to fail.
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte("key: [unclosed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	questions := []map[string]any{
+		{"text": "Q?", "options": []string{"a", "b", "c", "d"}, "correct_index": 0, "explanation": "e"},
+	}
+	file := writeTempJSON(t, questions)
+	err := runQuizCreate(context.Background(), "go", file)
+	if err == nil {
+		t.Error("expected error from setupStore when config is malformed")
+	}
+}
+
+func TestRunQuizCreateSaveError(t *testing.T) {
+	// Cancelled context causes st.SaveQuestionBank to fail.
+	tempDBEnv(t)
+	questions := []map[string]any{
+		{"text": "Q?", "options": []string{"a", "b", "c", "d"}, "correct_index": 0, "explanation": "e"},
+	}
+	file := writeTempJSON(t, questions)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := runQuizCreate(ctx, "go", file)
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}

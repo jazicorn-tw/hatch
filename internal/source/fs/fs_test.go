@@ -105,6 +105,104 @@ func TestFetchSkipsHiddenDirs(t *testing.T) {
 	}
 }
 
+func TestNewNonExistentRoot(t *testing.T) {
+	_, err := fssource.New(fssource.Config{Root: "/nonexistent/path/xyz_test", SourceName: "s"})
+	if err == nil {
+		t.Error("want error for non-existent root")
+	}
+}
+
+func TestNewRootIsFile(t *testing.T) {
+	tmp := t.TempDir()
+	filePath := filepath.Join(tmp, "notadir.txt")
+	if err := os.WriteFile(filePath, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := fssource.New(fssource.Config{Root: filePath, SourceName: "s"})
+	if err == nil {
+		t.Error("want error when root is a file, not a directory")
+	}
+}
+
+func TestFetchGitignoreDir(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, ".gitignore", "vendor/\n")
+	writeFile(t, root, "main.go", "package main")
+	writeFile(t, root, "vendor/lib.go", "package vendor")
+
+	ids := docIDs(mustFetch(t, root, "s"))
+	if slices.Contains(ids, "vendor/lib.go") {
+		t.Error("vendor/lib.go should be gitignored")
+	}
+	if !slices.Contains(ids, "main.go") {
+		t.Error("main.go should be included")
+	}
+}
+
+func TestFetchWalkError(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("skipping as root — chmod restrictions don't apply")
+	}
+	root := t.TempDir()
+	subDir := filepath.Join(root, "restricted")
+	if err := os.MkdirAll(subDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// Remove all permissions so WalkDir gets an error entering the directory.
+	if err := os.Chmod(subDir, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(subDir, 0o700) }) //nolint:errcheck
+
+	f, err := fssource.New(fssource.Config{Root: root, SourceName: "s"})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = f.Fetch(context.Background())
+	if err == nil {
+		t.Error("want error for inaccessible directory")
+	}
+}
+
+func TestFetchSkipsUnreadableFile(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("skipping as root — chmod restrictions don't apply")
+	}
+	root := t.TempDir()
+	writeFile(t, root, "visible.md", "hello")
+	writeFile(t, root, "noperm.md", "secret")
+	noPermPath := filepath.Join(root, "noperm.md")
+	if err := os.Chmod(noPermPath, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(noPermPath, 0o600) }) //nolint:errcheck
+
+	ids := docIDs(mustFetch(t, root, "s"))
+	if slices.Contains(ids, "noperm.md") {
+		t.Error("unreadable file should be skipped")
+	}
+	if !slices.Contains(ids, "visible.md") {
+		t.Error("visible.md should be included")
+	}
+}
+
+func TestFetchSkipsNonRegularFiles(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "real.md", "hello")
+	linkPath := filepath.Join(root, "link.md")
+	if err := os.Symlink(filepath.Join(root, "real.md"), linkPath); err != nil {
+		t.Skip("symlinks not supported:", err)
+	}
+
+	ids := docIDs(mustFetch(t, root, "s"))
+	if slices.Contains(ids, "link.md") {
+		t.Error("symlink link.md should be skipped as non-regular file")
+	}
+	if !slices.Contains(ids, "real.md") {
+		t.Error("real.md should be included")
+	}
+}
+
 // helpers
 
 func mustFetch(t *testing.T, root, sourceName string) []source.Document {

@@ -224,3 +224,82 @@ func TestDecodeVecEmpty(t *testing.T) {
 		t.Errorf("expected empty slice for empty bytes, got %d", len(v))
 	}
 }
+
+func TestOpenPingError(t *testing.T) {
+	// Path inside a non-existent directory causes Ping to fail.
+	_, err := Open("/tmp/nonexistent_hatch_test_xyz_12345/sub/test.db")
+	if err == nil {
+		t.Error("expected error when parent directory does not exist")
+	}
+}
+
+func TestUpsertCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := s.Upsert(ctx, []store.Record{
+		{Chunk: chunker.Chunk{ID: "x", Source: "s", Text: "t"}, Embedding: unitVec(0)},
+	})
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
+func TestDeleteBySourceCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := s.DeleteBySource(ctx, "src")
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
+func TestSearchCancelledContext(t *testing.T) {
+	s := openTestStore(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := s.Search(ctx, unitVec(0), 1)
+	if err == nil {
+		t.Error("expected error with cancelled context")
+	}
+}
+
+func TestPrepareUpsertStmtsError(t *testing.T) {
+	s := openTestStore(t)
+	tx, err := s.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = prepareUpsertStmts(ctx, tx)
+	if err == nil {
+		t.Error("expected error with cancelled context for PrepareContext")
+	}
+}
+
+func TestExecUpsertRecordChunkError(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stmts, err := prepareUpsertStmts(ctx, tx)
+	if err != nil {
+		tx.Rollback() //nolint:errcheck
+		t.Fatal(err)
+	}
+	// Rollback makes ExecContext on the prepared statement fail.
+	tx.Rollback() //nolint:errcheck
+	err = execUpsertRecord(ctx, stmts, store.Record{
+		Chunk:     chunker.Chunk{ID: "x", Source: "s", Text: "t"},
+		Embedding: unitVec(0),
+	})
+	stmts.close()
+	if err == nil {
+		t.Error("expected error after tx rollback")
+	}
+}

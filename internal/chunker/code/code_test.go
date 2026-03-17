@@ -109,3 +109,36 @@ func TestChunkEmptyDocument(t *testing.T) {
 		t.Errorf("want 0 chunks for empty doc, got %d", len(chunks))
 	}
 }
+
+func TestNewZeroWindowSize(t *testing.T) {
+	// Overlap must be less than WindowSize to bypass the overlap check and
+	// reach the WindowSize <= 0 guard. Use Overlap=-1, WindowSize=0.
+	_, err := code.New(code.Config{WindowSize: 0, Overlap: -1})
+	if err == nil {
+		t.Error("want error when WindowSize is zero")
+	}
+}
+
+func TestChunkTrailingNewline(t *testing.T) {
+	// Content ending with "\n" produces a trailing empty string after Split;
+	// the chunker should remove it and produce the same result as without it.
+	c, err := code.New(code.Config{WindowSize: 3, Overlap: 0})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	withoutNewline := source.Document{ID: "f.go", Source: "s", Content: "a\nb\nc"}
+	withNewline := source.Document{ID: "f.go", Source: "s", Content: "a\nb\nc\n"}
+
+	chunksA, err := c.Chunk(withoutNewline)
+	if err != nil {
+		t.Fatalf("Chunk (without newline): %v", err)
+	}
+	chunksB, err := c.Chunk(withNewline)
+	if err != nil {
+		t.Fatalf("Chunk (with newline): %v", err)
+	}
+	if len(chunksA) != len(chunksB) {
+		t.Errorf("want same chunk count with/without trailing newline: %d vs %d",
+			len(chunksA), len(chunksB))
+	}
+}
