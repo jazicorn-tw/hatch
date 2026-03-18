@@ -25,6 +25,8 @@ jobs:
     name: Check publish conditions
     runs-on: ubuntu-latest
 
+    permissions: {}
+
     if: github.repository == vars.CANONICAL_REPOSITORY
 
     steps:
