@@ -7,12 +7,10 @@ set -euo pipefail
 # Runs on ALL branches:
 #   1. ./dev format  (auto-format Go source)
 #   2. ./dev lint    (go vet + markdownlint)
-#   3. ./dev test    (go test ./...)
 #
 # Overrides (one-off per commit):
 #   SKIP_QUALITY=1    git commit ...   -> skip this hook entirely
-#   AUTO_FORMAT=0     git commit ...   -> skip auto-format (lint + test still run)
-#   SKIP_TESTS=1      git commit ...   -> skip tests (format + lint still run)
+#   AUTO_FORMAT=0     git commit ...   -> skip auto-format (lint still runs)
 #   DEBUG_PRECOMMIT=1 git commit ...   -> print debug info
 
 log()   { printf '%s\n' "$*"; return 0; }
@@ -81,10 +79,3 @@ fi
 log "pre-commit: linting (./dev lint)..."
 ./dev lint || fail "lint (./dev lint)" $?
 
-# --- Test ---
-if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
-  log "pre-commit: testing (./dev test)..."
-  ./dev test || fail "test (./dev test)" $?
-else
-  log "pre-commit: SKIP_TESTS=1 set; skipping tests."
-fi

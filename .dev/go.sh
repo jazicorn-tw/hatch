@@ -24,7 +24,9 @@ run_format() {
 run_test() {
   header "test"
   if has_go_files; then
-    spin "Running go test..." go test ./...
+    while IFS= read -r pkg; do
+      spin "  ${pkg##*/}" go test "$pkg" || return 1
+    done < <(go list ./...)
     log_done "test"
   else
     log_warn "no Go files found, skipping go test"
