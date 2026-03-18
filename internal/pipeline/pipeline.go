@@ -21,6 +21,11 @@ type Progress struct {
 	Fields map[string]string
 }
 
+type docChunks struct {
+	doc    source.Document
+	chunks []chunker.Chunk
+}
+
 // Run executes the ingestion pipeline end-to-end:
 //  1. Fetch all documents from src.
 //  2. Chunk each document with chk.
@@ -38,36 +43,41 @@ func Run(
 	st store.VecStore,
 	progressCh chan<- Progress,
 ) error {
-	// Step 1: Fetch.
 	docs, err := src.Fetch(ctx)
 	if err != nil {
 		return fmt.Errorf("pipeline: fetch: %w", err)
 	}
 
-	// Step 2: Chunk all documents upfront so we know Total.
-	type docChunks struct {
-		doc    source.Document
-		chunks []chunker.Chunk
+	all, total, err := chunkAll(docs, chk)
+	if err != nil {
+		return err
 	}
+
+	return embedAndUpsert(ctx, all, total, emb, st, progressCh)
+}
+
+// chunkAll chunks all documents and returns the results with total chunk count.
+func chunkAll(docs []source.Document, chk chunker.Chunker) ([]docChunks, int, error) {
 	var all []docChunks
 	for _, doc := range docs {
 		chunks, err := chk.Chunk(doc)
 		if err != nil {
-			return fmt.Errorf("pipeline: chunk %s: %w", doc.ID, err)
+			return nil, 0, fmt.Errorf("pipeline: chunk %s: %w", doc.ID, err)
 		}
 		if len(chunks) == 0 {
 			continue
 		}
 		all = append(all, docChunks{doc: doc, chunks: chunks})
 	}
-
-	// Count total chunks for progress reporting.
 	total := 0
 	for _, dc := range all {
 		total += len(dc.chunks)
 	}
+	return all, total, nil
+}
 
-	// Step 3 + 4: Embed and upsert per document.
+// embedAndUpsert embeds and upserts each document's chunks, sending progress updates.
+func embedAndUpsert(ctx context.Context, all []docChunks, total int, emb embedder.Embedder, st store.VecStore, progressCh chan<- Progress) error {
 	done := 0
 	for _, dc := range all {
 		if err := ctx.Err(); err != nil {
@@ -109,6 +119,5 @@ func Run(
 			}
 		}
 	}
-
 	return nil
 }

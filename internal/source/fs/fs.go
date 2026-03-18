@@ -53,67 +53,65 @@ func New(cfg Config) (*Fetcher, error) {
 // The walk is cancelled if ctx is done.
 func (f *Fetcher) Fetch(ctx context.Context) ([]source.Document, error) {
 	var docs []source.Document
-
 	err := filepath.WalkDir(f.cfg.Root, func(path string, d os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-
-		// Check for cancellation before processing each entry.
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		// Skip the root itself.
-		if path == f.cfg.Root {
-			return nil
-		}
-
-		rel, err := filepath.Rel(f.cfg.Root, path)
-		if err != nil {
-			return fmt.Errorf("fs: rel path for %s: %w", path, err)
-		}
-
-		// Apply gitignore rules to both files and directories.
-		if f.ignore != nil && f.ignore.Match(path, d.IsDir()) {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// Skip hidden directories (e.g. .git, .github).
-		if d.IsDir() {
-			base := filepath.Base(path)
-			if strings.HasPrefix(base, ".") {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		if !d.Type().IsRegular() {
-			return nil
-		}
-
-		content, err := readTextFile(path)
-		if err != nil {
-			// Skip unreadable or binary files.
-			return nil //nolint:nilerr
-		}
-
-		docs = append(docs, source.Document{
-			ID:      filepath.ToSlash(rel),
-			Source:  f.cfg.SourceName,
-			Content: content,
-		})
-		return nil
+		return f.walkEntry(ctx, &docs, path, d, walkErr)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("fs: walk %s: %w", f.cfg.Root, err)
 	}
 	return docs, nil
+}
+
+// walkEntry is the WalkDir callback. It appends readable text files to docs.
+func (f *Fetcher) walkEntry(ctx context.Context, docs *[]source.Document, path string, d os.DirEntry, walkErr error) error {
+	if walkErr != nil {
+		return walkErr
+	}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	if path == f.cfg.Root {
+		return nil
+	}
+
+	rel, err := filepath.Rel(f.cfg.Root, path)
+	if err != nil {
+		return fmt.Errorf("fs: rel path for %s: %w", path, err)
+	}
+
+	if f.ignore != nil && f.ignore.Match(path, d.IsDir()) {
+		if d.IsDir() {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+
+	if d.IsDir() {
+		if strings.HasPrefix(filepath.Base(path), ".") {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+
+	if !d.Type().IsRegular() {
+		return nil
+	}
+
+	content, err := readTextFile(path)
+	if err != nil {
+		return nil //nolint:nilerr
+	}
+
+	*docs = append(*docs, source.Document{
+		ID:      filepath.ToSlash(rel),
+		Source:  f.cfg.SourceName,
+		Content: content,
+	})
+	return nil
 }
 
 // readTextFile reads a file's content as a string.

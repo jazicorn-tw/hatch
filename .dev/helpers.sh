@@ -19,10 +19,10 @@ fi
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
-log_info()  { $GUM log --level info  "$*"; }
-log_warn()  { $GUM log --level warn  "$*"; }
-log_error() { $GUM log --level error "$*"; }
-log_done()  { $GUM log --level info  "$* ✓"; }
+log_info()  { $GUM log --level info  "$*"; return 0; }
+log_warn()  { $GUM log --level warn  "$*"; return 0; }
+log_error() { $GUM log --level error "$*"; return 0; }
+log_done()  { $GUM log --level info  "$* ✓"; return 0; }
 
 # ── Spinner ───────────────────────────────────────────────────────────────────
 # TTY: run command in background, spin on its PID, print output only on failure.
@@ -52,6 +52,7 @@ spin() {
 
 has_go_files() {
   find . -name '*.go' -not -path './vendor/*' 2>/dev/null | head -1 | grep -q .
+  return $?
 }
 
 header() {
@@ -59,11 +60,13 @@ header() {
     --foreground 99 \
     --bold \
     "▶ $*"
+  return 0
 }
 
 env_check() {
-  if [ ! -f .env ]; then
+  if [[ ! -f .env ]]; then
     log_error ".env not found — run: ./dev env init"
     exit 1
   fi
+  return 0
 }

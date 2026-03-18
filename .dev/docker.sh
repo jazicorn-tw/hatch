@@ -5,12 +5,14 @@ run_docker_up() {
   header "docker up"
   spin "Starting Docker Compose..." docker compose up -d
   log_done "docker up"
+  return 0
 }
 
 run_docker_down() {
   header "docker down"
   spin "Stopping Docker Compose..." docker compose down
   log_done "docker down"
+  return 0
 }
 
 run_docker_reset() {
@@ -18,4 +20,5 @@ run_docker_reset() {
   $GUM confirm "Reset Docker Compose? This will delete volumes." || exit 0
   spin "Resetting Docker Compose..." bash -c "docker compose down -v && docker compose up -d"
   log_done "docker reset"
+  return 0
 }

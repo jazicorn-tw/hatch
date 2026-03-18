@@ -10,4 +10,5 @@ run_changelog() {
   $GUM log --level info "dry-run — no release will be created"
   npx semantic-release --dry-run --no-ci
   log_done "changelog"
+  return 0
 }

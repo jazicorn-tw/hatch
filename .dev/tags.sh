@@ -20,4 +20,5 @@ run_tags() {
   echo ""
   $GUM style --bold "scopes  (commit scope only)"
   $GUM style --foreground 99 "$(printf '%s\n' $_scopes)"
+  return 0
 }

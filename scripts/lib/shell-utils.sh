@@ -46,6 +46,7 @@ die() {
 have() {
   local cmd="$1"
   command -v "$cmd" >/dev/null 2>&1
+  return $?
 }
 
 # setup_colors — sets ANSI color variables in the caller's scope.
@@ -63,35 +64,36 @@ setup_colors() {
   else
     RESET="" BOLD="" DIM="" YELLOW="" CYAN="" GREEN="" RED=""
   fi
+  return 0
 }
 
 # has_interactive_tty — returns 0 if /dev/tty can actually be opened, 1 otherwise.
 # Performs a functional open (not just a permission check) so that a "Device not
 # configured" /dev/tty is correctly treated as unavailable.
-has_interactive_tty() { { true </dev/tty; } 2>/dev/null; }
+has_interactive_tty() { { true </dev/tty; } 2>/dev/null; return $?; }
 
 # is_env_true — returns 0 if the argument equals "1", 1 otherwise.
 # Usage: is_env_true "${MY_VAR:-0}"
-is_env_true() { [[ "${1:-0}" == "1" ]]; }
+is_env_true() { [[ "${1:-0}" == "1" ]]; return $?; }
 
 # ── Styled output helpers (for scripts that don't use gum) ────────────────────
 # Call init_output_helpers after sourcing to set _rule/_step/_pass/_fail/_skip/_indent.
 init_output_helpers() {
   if [[ -n "$_GUM" ]]; then
-    _rule()   { :; }
-    _step()   { $_GUM style --foreground 240 "$*"; }
-    _pass()   { $_GUM log --level info  "$*"; }
-    _fail()   { $_GUM log --level error "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
-    _skip()   { $_GUM log --level warn  "$*"; }
-    _indent() { cat; }
+    _rule()   { :; return 0; }
+    _step()   { $_GUM style --foreground 240 "$*"; return 0; }
+    _pass()   { $_GUM log --level info  "$*"; return 0; }
+    _fail()   { $_GUM log --level error "$*"; failed=1; fail_count=$(( fail_count + 1 )); return 0; }
+    _skip()   { $_GUM log --level warn  "$*"; return 0; }
+    _indent() { cat; return 0; }
   else
     _RULE='  ────────────────────────────────────────────────────'
-    _rule()   { printf '%s\n' "$_RULE"; }
-    _step()   { printf '\n  %s\n' "$*"; }
-    _pass()   { printf '  ✅  %s\n' "$*"; }
-    _fail()   { printf '\n  ❌  %s\n' "$*"; failed=1; fail_count=$(( fail_count + 1 )); }
-    _skip()   { printf '  ⏭   %s\n' "$*"; }
-    _indent() { sed 's/^/    /'; }
+    _rule()   { printf '%s\n' "$_RULE"; return 0; }
+    _step()   { printf '\n  %s\n' "$*"; return 0; }
+    _pass()   { printf '  ✅  %s\n' "$*"; return 0; }
+    _fail()   { printf '\n  ❌  %s\n' "$*"; failed=1; fail_count=$(( fail_count + 1 )); return 0; }
+    _skip()   { printf '  ⏭   %s\n' "$*"; return 0; }
+    _indent() { sed 's/^/    /'; return 0; }
   fi
 }
 

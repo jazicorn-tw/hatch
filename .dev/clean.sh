@@ -6,6 +6,7 @@ run_clean_local() {
   $GUM confirm "Clean local build artifacts?" || exit 0
   ./scripts/cache/clean-local.sh
   log_done "clean local"
+  return 0
 }
 
 run_clean_docker() {
@@ -13,6 +14,7 @@ run_clean_docker() {
   $GUM confirm "Clean Docker build cache?" || exit 0
   ./scripts/cache/cache-docker.sh
   log_done "clean docker"
+  return 0
 }
 
 run_clean_colima() {
@@ -20,4 +22,5 @@ run_clean_colima() {
   $GUM confirm "Reset Colima? This will delete all containers and volumes." || exit 0
   ./scripts/cache/clean-colima.sh
   log_done "clean colima"
+  return 0
 }

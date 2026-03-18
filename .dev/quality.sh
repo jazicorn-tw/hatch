@@ -7,6 +7,7 @@ run_verify() {
   run_lint
   run_test
   log_done "verify"
+  return 0
 }
 
 run_quality() {
@@ -16,6 +17,7 @@ run_quality() {
   run_lint
   run_test
   log_done "quality gate passed"
+  return 0
 }
 
 run_pre_commit() {
@@ -32,6 +34,7 @@ run_pre_commit() {
     log_warn "SKIP_TESTS=1 set, skipping tests"
   fi
   log_done "pre-commit"
+  return 0
 }
 
 run_bootstrap() {
@@ -40,4 +43,5 @@ run_bootstrap() {
   run_doctor
   run_quality
   log_done "bootstrap"
+  return 0
 }

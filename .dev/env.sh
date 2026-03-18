@@ -30,11 +30,13 @@ run_env_up() {
     fi
   fi
   ./scripts/dev/start-dev.sh
+  return 0
 }
 
 run_env_down() {
   header "env down"
   ./scripts/dev/stop-dev.sh
+  return 0
 }
 
 run_env_status() {
@@ -42,9 +44,11 @@ run_env_status() {
   echo "docker context: $(docker context show 2>/dev/null || echo 'n/a')"
   colima status 2>/dev/null || true
   docker ps 2>/dev/null | head -n 15 || true
+  return 0
 }
 
 run_env_init() {
   header "env init"
   ./scripts/bootstrap/init-env.sh
+  return 0
 }

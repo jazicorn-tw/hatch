@@ -69,4 +69,5 @@ run_test_ci() {
   fi
 
   log_done "test-ci"
+  return 0
 }

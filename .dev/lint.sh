@@ -5,6 +5,7 @@ run_lint_docs() {
   spin "Running markdownlint..." \
     ./node_modules/.bin/markdownlint-cli2 '**/*.md' '#node_modules'
   log_done "lint:docs"
+  return 0
 }
 
 run_lint() {
@@ -16,4 +17,5 @@ run_lint() {
   else
     log_warn "no Go files found, skipping go vet"
   fi
+  return 0
 }

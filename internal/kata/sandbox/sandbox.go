@@ -17,6 +17,11 @@ import (
 // DefaultTimeout is the default execution timeout for kata runs.
 const DefaultTimeout = 30 * time.Second
 
+const (
+	errWriteSolution = "sandbox: write solution: %w"
+	errWriteTests    = "sandbox: write tests: %w"
+)
+
 // Config configures sandbox execution.
 type Config struct {
 	// Timeout is the maximum time allowed for the subprocess. Defaults to DefaultTimeout.
@@ -90,10 +95,10 @@ func runGo(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte, e
 	}
 
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.go"), []byte(solution), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write solution: %w", err)
+		return nil, fmt.Errorf(errWriteSolution, err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata_test.go"), []byte(k.Tests), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write tests: %w", err)
+		return nil, fmt.Errorf(errWriteTests, err)
 	}
 
 	// Minimal go.mod so "go test" doesn't try to fetch a module.
@@ -136,10 +141,10 @@ func runPython(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byt
 	}
 
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.py"), []byte(solution), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write solution: %w", err)
+		return nil, fmt.Errorf(errWriteSolution, err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "test_kata.py"), []byte(k.Tests), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write tests: %w", err)
+		return nil, fmt.Errorf(errWriteTests, err)
 	}
 
 	cmd := exec.CommandContext(ctx, python, "-m", "pytest", "test_kata.py", "-v", "--tb=short")
@@ -156,10 +161,10 @@ func runJavaScript(ctx context.Context, k kata.Kata, solution, tmpDir string) ([
 	}
 
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.js"), []byte(solution), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write solution: %w", err)
+		return nil, fmt.Errorf(errWriteSolution, err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "kata.test.js"), []byte(k.Tests), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write tests: %w", err)
+		return nil, fmt.Errorf(errWriteTests, err)
 	}
 
 	// Minimal package.json so node can find the test runner.
@@ -187,10 +192,10 @@ func runJava(ctx context.Context, k kata.Kata, solution, tmpDir string) ([]byte,
 	}
 
 	if err := os.WriteFile(filepath.Join(tmpDir, "Kata.java"), []byte(solution), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write solution: %w", err)
+		return nil, fmt.Errorf(errWriteSolution, err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "KataTest.java"), []byte(k.Tests), 0600); err != nil {
-		return nil, fmt.Errorf("sandbox: write tests: %w", err)
+		return nil, fmt.Errorf(errWriteTests, err)
 	}
 
 	// Compile.

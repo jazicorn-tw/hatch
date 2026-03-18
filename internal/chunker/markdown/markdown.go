@@ -18,19 +18,41 @@ type Chunker struct{}
 // New returns a markdown Chunker.
 func New() *Chunker { return &Chunker{} }
 
+type section struct {
+	heading string
+	level   int
+	lines   []string
+}
+
 // Chunk implements chunker.Chunker.
 // If the document has no headings, the entire content is returned as one Chunk.
 func (c *Chunker) Chunk(doc source.Document) ([]chunker.Chunk, error) {
-	type section struct {
-		heading string
-		level   int
-		lines   []string
+	sections, err := scanSections(doc.Content)
+	if err != nil {
+		return nil, err
 	}
 
+	if len(sections) == 0 {
+		if doc.Content == "" {
+			return nil, nil
+		}
+		return []chunker.Chunk{{
+			ID:       fmt.Sprintf("%s#0", doc.ID),
+			Source:   doc.Source,
+			Text:     doc.Content,
+			Metadata: map[string]string{},
+		}}, nil
+	}
+
+	return buildChunks(sections, doc.ID, doc.Source), nil
+}
+
+// scanSections parses content into heading-delimited sections.
+func scanSections(content string) ([]section, error) {
 	var sections []section
 	var current *section
 
-	scanner := bufio.NewScanner(strings.NewReader(doc.Content))
+	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
 		line := scanner.Text()
 		level, heading, isHeading := parseHeading(line)
@@ -53,24 +75,14 @@ func (c *Chunker) Chunk(doc source.Document) ([]chunker.Chunk, error) {
 	if current != nil {
 		sections = append(sections, *current)
 	}
+	return sections, nil
+}
 
-	// If there are no sections at all, return a single chunk of the entire content.
-	if len(sections) == 0 {
-		if doc.Content == "" {
-			return nil, nil
-		}
-		return []chunker.Chunk{{
-			ID:       fmt.Sprintf("%s#0", doc.ID),
-			Source:   doc.Source,
-			Text:     doc.Content,
-			Metadata: map[string]string{},
-		}}, nil
-	}
-
+// buildChunks converts sections into Chunks, skipping empty sections.
+func buildChunks(sections []section, docID, docSource string) []chunker.Chunk {
 	chunks := make([]chunker.Chunk, 0, len(sections))
 	for i, sec := range sections {
-		text := strings.Join(sec.lines, "\n")
-		text = strings.TrimSpace(text)
+		text := strings.TrimSpace(strings.Join(sec.lines, "\n"))
 		if text == "" {
 			continue
 		}
@@ -80,13 +92,13 @@ func (c *Chunker) Chunk(doc source.Document) ([]chunker.Chunk, error) {
 			meta["level"] = fmt.Sprintf("%d", sec.level)
 		}
 		chunks = append(chunks, chunker.Chunk{
-			ID:       fmt.Sprintf("%s#%d", doc.ID, i),
-			Source:   doc.Source,
+			ID:       fmt.Sprintf("%s#%d", docID, i),
+			Source:   docSource,
 			Text:     text,
 			Metadata: meta,
 		})
 	}
-	return chunks, nil
+	return chunks
 }
 
 // parseHeading detects an ATX heading (^#{1,3} text).

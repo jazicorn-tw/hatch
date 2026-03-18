@@ -9,6 +9,7 @@ run_build() {
   else
     log_warn "no Go files found, skipping build"
   fi
+  return 0
 }
 
 run_format() {
@@ -19,6 +20,7 @@ run_format() {
   else
     log_warn "no Go files found, skipping gofmt"
   fi
+  return 0
 }
 
 run_test() {
@@ -31,4 +33,5 @@ run_test() {
   else
     log_warn "no Go files found, skipping go test"
   fi
+  return 0
 }

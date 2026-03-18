@@ -5,18 +5,21 @@ run_doctor() {
   header "doctor"
   spin "Checking environment..." ./scripts/doctor.sh
   log_done "doctor"
+  return 0
 }
 
 run_hooks() {
   header "hooks"
   ./scripts/bootstrap/install-hooks.sh
   log_done "hooks"
+  return 0
 }
 
 run_exec_bits() {
   header "exec-bits"
   spin "Checking executable bits..." ./scripts/check/check-executable-bits.sh
   log_done "exec-bits"
+  return 0
 }
 
 run_build_run() {
@@ -32,6 +35,7 @@ run_build_run() {
     set -a; source .env; set +a
     ./hatch "${args[@]}"
   fi
+  return 0
 }
 
 run_run() {
@@ -45,4 +49,5 @@ run_run() {
     set -a; source .env; set +a
     go run ./...
   fi
+  return 0
 }
