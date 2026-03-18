@@ -27,7 +27,18 @@ run_test() {
   header "test"
   if has_go_files; then
     while IFS= read -r pkg; do
-      spin "  ${pkg##*/}" go test "$pkg" || return 1
+      short="${pkg##*/}"
+      if out=$(go test "$pkg" 2>&1); then
+        if printf '%s' "$out" | grep -q '\[no test files\]'; then
+          $GUM style --foreground 240 "  · ${short}"
+        else
+          $GUM style --foreground 2 "  ✓ ${short}"
+        fi
+      else
+        printf '%s\n' "$out"
+        $GUM style --foreground 1 "  ✗ ${short}"
+        return 1
+      fi
     done < <(go list ./...)
     log_done "test"
   else
