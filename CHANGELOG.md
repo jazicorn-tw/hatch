@@ -1,5 +1,36 @@
 # 📦 Release History
 
+## 📦 Release 0.5.1
+
+### 🐛 Fixes
+
+- **deps:** bump golang.org/x/crypto to v0.45.0 (56c3907)
+- **deps:** bump golang.org/x/net to v0.38.0 (2e2aab2)
+- **deps:** bump golang.org/x/oauth2 to v0.27.0 (ed854ae)
+- **dev:** resolve code smell issues across shell scripts and Go packages (786333a)
+- **test:** remove unused pos field in errorOnReadFile (U1000) (b692acb)
+- **tooling:** prevent run_test from silently hanging during CGO recompilation (b9f4c1d)
+
+### ✅ Tests
+
+- add unit tests for uncovered packages and deduplicate literals (57f856f)
+- increase coverage across cmd/hatch and internal packages (bf17a5e)
+- **store:** add question_bank and kata_bank store tests (5498b01)
+- **store:** add unit tests for sessions, kata sessions, generators, and fakes (a515319)
+- **store:** raise coverage from 82% to 96.5% via injectable error paths (f3ab423)
+
+### 🤖 CI / CD
+
+- add permissions: {} to gate job in publish.yml (3beb07a)
+- disable provenance attestation on Docker build (e38aaed)
+
+### 🧹 Chores
+
+- **deps:** bump GitHub Actions and semantic-release to latest major versions (83bb2b3)
+- **dev:** clean up test runner output (8ca2aae)
+- **dev:** improve test runner output and remove test from pre-commit hook (50e57f9)
+- **tooling:** add staticcheck to pre-commit hook (25699c8)
+
 ## 📦 Release 0.5.0
 
 ### ✨ Features
