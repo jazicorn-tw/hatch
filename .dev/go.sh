@@ -26,19 +26,25 @@ run_format() {
 run_test() {
   header "test"
   if has_go_files; then
+    # Pre-compile all test binaries so per-package runs are fast and silent
+    # compilation doesn't make the loop appear to hang.
+    spin "Compiling test binaries..." go test -run '^$' ./...
     while IFS= read -r pkg; do
       short="${pkg##*/}"
-      if out=$(go test "$pkg" 2>&1); then
-        if printf '%s' "$out" | grep -q '\[no test files\]'; then
+      tmp=$(mktemp)
+      if go test "$pkg" >"$tmp" 2>&1; then
+        if grep -q '\[no test files\]' "$tmp"; then
           $GUM style --foreground 240 "  · ${short}"
         else
           $GUM style --foreground 2 "  ✓ ${short}"
         fi
       else
-        printf '%s\n' "$out"
+        cat "$tmp"
         $GUM style --foreground 1 "  ✗ ${short}"
+        rm -f "$tmp"
         return 1
       fi
+      rm -f "$tmp"
     done < <(go list ./...)
     log_done "test"
   else
