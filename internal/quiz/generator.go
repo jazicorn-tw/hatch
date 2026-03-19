@@ -17,6 +17,9 @@ import (
 //go:embed prompt/*.tmpl
 var promptFS embed.FS
 
+// readTemplateFile is a var so tests can override it to inject errors.
+var readTemplateFile = func(name string) ([]byte, error) { return promptFS.ReadFile(name) }
+
 // Generator creates MCQ questions from a topic by:
 //  1. Embedding the topic to a search vector
 //  2. Retrieving the top-k relevant chunks from the store
@@ -107,7 +110,7 @@ func (g *Generator) Generate(ctx context.Context, topic string, count int) ([]Qu
 // buildPrompt renders mcq.tmpl with the topic, count, and retrieved chunks.
 // It also returns the chunk IDs so they can be attached to each Question.
 func (g *Generator) buildPrompt(topic string, count int, records []store.Record) (string, []string, error) {
-	tmplBytes, err := promptFS.ReadFile("prompt/mcq.tmpl")
+	tmplBytes, err := readTemplateFile("prompt/mcq.tmpl")
 	if err != nil {
 		return "", nil, fmt.Errorf("read template: %w", err)
 	}

@@ -157,3 +157,27 @@ func TestCompleteBodyReadError(t *testing.T) {
 		t.Error("expected error when body read fails")
 	}
 }
+
+func TestCompleteMarshalError(t *testing.T) {
+	orig := jsonMarshal
+	jsonMarshal = func(_ any) ([]byte, error) { return nil, fmt.Errorf("forced marshal error") }
+	defer func() { jsonMarshal = orig }()
+
+	l := &LLM{cfg: Config{APIKey: "key", Model: defaultModel, MaxTokens: defaultMaxTokens}, client: http.DefaultClient}
+	_, err := l.Complete(context.Background(), "prompt")
+	if err == nil {
+		t.Error("expected error when json.Marshal fails")
+	}
+}
+
+func TestCompleteCreateRequestError(t *testing.T) {
+	orig := apiEndpoint
+	apiEndpoint = "%" // malformed URL — http.NewRequestWithContext will fail
+	defer func() { apiEndpoint = orig }()
+
+	l := &LLM{cfg: Config{APIKey: "key", Model: defaultModel, MaxTokens: defaultMaxTokens}, client: http.DefaultClient}
+	_, err := l.Complete(context.Background(), "prompt")
+	if err == nil {
+		t.Error("expected error for invalid URL")
+	}
+}

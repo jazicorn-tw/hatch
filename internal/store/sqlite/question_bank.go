@@ -8,6 +8,9 @@ import (
 	"github.com/jazicorn/hatch/internal/quiz"
 )
 
+// marshalQuestionOptions is injectable so tests can simulate json.Marshal failures.
+var marshalQuestionOptions = json.Marshal
+
 // SaveQuestionBank inserts a batch of Sr-authored questions for the given topic.
 // Existing rows with the same ID are replaced.
 func (s *Store) SaveQuestionBank(ctx context.Context, topic string, questions []quiz.Question) error {
@@ -18,7 +21,7 @@ func (s *Store) SaveQuestionBank(ctx context.Context, topic string, questions []
 	defer tx.Rollback() //nolint:errcheck
 
 	for _, q := range questions {
-		optsJSON, err := json.Marshal(q.Options)
+		optsJSON, err := marshalQuestionOptions(q.Options)
 		if err != nil {
 			return fmt.Errorf("sqlite: marshal options for question %s: %w", q.ID, err)
 		}

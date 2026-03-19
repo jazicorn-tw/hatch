@@ -38,3 +38,24 @@ func TestEmbedBodyReadError(t *testing.T) {
 		t.Error("expected error when body read fails")
 	}
 }
+
+func TestEmbedMarshalError(t *testing.T) {
+	orig := jsonMarshal
+	jsonMarshal = func(_ any) ([]byte, error) { return nil, fmt.Errorf("forced marshal error") }
+	defer func() { jsonMarshal = orig }()
+
+	e := &Embedder{cfg: Config{Host: "http://localhost", Model: "test"}, client: http.DefaultClient}
+	_, err := e.Embed(context.Background(), []string{"hello"})
+	if err == nil {
+		t.Error("expected error when json.Marshal fails")
+	}
+}
+
+func TestEmbedCreateRequestError(t *testing.T) {
+	// A null byte in the host URL causes http.NewRequestWithContext to fail.
+	e := &Embedder{cfg: Config{Host: "http://\x00", Model: "test"}, client: http.DefaultClient}
+	_, err := e.Embed(context.Background(), []string{"hello"})
+	if err == nil {
+		t.Error("expected error for invalid URL")
+	}
+}

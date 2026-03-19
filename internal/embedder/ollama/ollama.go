@@ -15,6 +15,10 @@ const (
 	defaultHost  = "http://localhost:11434"
 )
 
+// jsonMarshal is a package-level var so tests can override it to inject
+// errors in the marshal path.
+var jsonMarshal = json.Marshal
+
 // Config holds Ollama API parameters for the embedder.
 type Config struct {
 	// Host is the base URL of the Ollama server. Defaults to http://localhost:11434.
@@ -57,7 +61,7 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 	}
 
 	payload := embedRequest{Model: e.cfg.Model, Input: texts}
-	data, err := json.Marshal(payload)
+	data, err := jsonMarshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("ollama embed: marshal request: %w", err)
 	}

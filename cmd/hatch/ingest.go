@@ -24,6 +24,18 @@ import (
 	"github.com/jazicorn/hatch/internal/store/sqlite"
 )
 
+// pipelineRun is the function used to run the ingestion pipeline; it can be
+// overridden in tests to inject errors or stubs.
+var pipelineRun = pipeline.Run
+
+// osGetwd is the function used to get the working directory; it can be
+// overridden in tests to inject errors.
+var osGetwd = os.Getwd
+
+// osUserHomeDir is the function used to get the user home directory; it can be
+// overridden in tests to inject errors.
+var osUserHomeDir = os.UserHomeDir
+
 func newIngestCmd() *cobra.Command {
 	var sourceName string
 	cmd := &cobra.Command{
@@ -77,7 +89,7 @@ func runIngest(ctx context.Context, sourceName string) error {
 	progressCh := make(chan pipeline.Progress, 16)
 	barDone := drainProgressBar(sourceName, progressCh)
 
-	runErr := pipeline.Run(ctx, src, newDispatchChunker(), emb, st, progressCh)
+	runErr := pipelineRun(ctx, src, newDispatchChunker(), emb, st, progressCh)
 	close(progressCh)
 	<-barDone
 
@@ -101,7 +113,7 @@ func findSource(cfg *config.Config, name string) (*config.SourceConfig, error) {
 // resolveDBPath expands ~ in dbPath, defaults to ~/.hatch/hatch.db, and
 // ensures the parent directory exists before returning the resolved path.
 func resolveDBPath(dbPath string) (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := osUserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("get home dir: %w", err)
 	}
@@ -121,7 +133,7 @@ func resolvePath(path string) (string, error) {
 	if filepath.IsAbs(path) {
 		return path, nil
 	}
-	wd, err := os.Getwd()
+	wd, err := osGetwd()
 	if err != nil {
 		return "", fmt.Errorf("get working dir: %w", err)
 	}

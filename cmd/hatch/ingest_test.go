@@ -1,13 +1,26 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/jazicorn/hatch/internal/chunker"
 	"github.com/jazicorn/hatch/internal/config"
+	"github.com/jazicorn/hatch/internal/embedder"
 	"github.com/jazicorn/hatch/internal/pipeline"
 	"github.com/jazicorn/hatch/internal/source"
+	"github.com/jazicorn/hatch/internal/store"
+)
+
+const (
+	wantNonNilEmbedder = "expected non-nil embedder"
+	hatchConfigFile    = "config.yaml"
+	hatchDirName       = ".hatch"
+	envHatchDBPath     = "HATCH_DB_PATH"
+	ollamaIngestYAML   = "llm_provider: anthropic\nembed_provider: ollama\ndb_path: \"\"\nsources:\n  - name: docs\n    path: %s\n    type: filesystem\n"
 )
 
 // ---------------------------------------------------------------------------
@@ -162,7 +175,7 @@ func TestNewEmbedderOllama(t *testing.T) {
 		t.Fatalf("newEmbedder ollama: %v", err)
 	}
 	if emb == nil {
-		t.Fatal("expected non-nil embedder")
+		t.Fatal(wantNonNilEmbedder)
 	}
 }
 
@@ -173,7 +186,7 @@ func TestNewEmbedderGeminiWithKey(t *testing.T) {
 		t.Fatalf("newEmbedder gemini: %v", err)
 	}
 	if emb == nil {
-		t.Fatal("expected non-nil embedder")
+		t.Fatal(wantNonNilEmbedder)
 	}
 }
 
@@ -193,7 +206,7 @@ func TestNewEmbedderOpenAIWithKey(t *testing.T) {
 		t.Fatalf("newEmbedder openai: %v", err)
 	}
 	if emb == nil {
-		t.Fatal("expected non-nil embedder")
+		t.Fatal(wantNonNilEmbedder)
 	}
 }
 
@@ -241,11 +254,11 @@ func TestNewIngestCmdRunE(t *testing.T) {
 	// returns an error immediately.
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
-	hatchDir := filepath.Join(tmp, ".hatch")
+	hatchDir := filepath.Join(tmp, hatchDirName)
 	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte("key: [unclosed"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte("key: [unclosed"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	cmd := newIngestCmd()
@@ -253,5 +266,251 @@ func TestNewIngestCmdRunE(t *testing.T) {
 	err := cmd.RunE(cmd, nil)
 	if err == nil {
 		t.Error("expected error from RunE when config is malformed")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// resolveDBPath — osUserHomeDir error
+// ---------------------------------------------------------------------------
+
+func TestResolveDBPathHomeDirError(t *testing.T) {
+	orig := osUserHomeDir
+	osUserHomeDir = func() (string, error) { return "", fmt.Errorf("forced home dir error") }
+	defer func() { osUserHomeDir = orig }()
+	_, err := resolveDBPath("")
+	if err == nil {
+		t.Error("expected error when UserHomeDir fails")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// resolvePath — osGetwd error
+// ---------------------------------------------------------------------------
+
+func TestResolvePathGetWdError(t *testing.T) {
+	orig := osGetwd
+	osGetwd = func() (string, error) { return "", fmt.Errorf("forced getwd error") }
+	defer func() { osGetwd = orig }()
+	_, err := resolvePath("relative/path")
+	if err == nil {
+		t.Error("expected error when getwd fails")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// runIngest — various error and success paths
+// ---------------------------------------------------------------------------
+
+func TestRunIngestConfigLoadError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte("key: [unclosed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := runIngest(context.Background(), "test-source")
+	if err == nil {
+		t.Error("expected error for malformed config")
+	}
+}
+
+func TestRunIngestSourceNotFound(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := "llm_provider: anthropic\nembed_provider: ollama\nsources: []\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := runIngest(context.Background(), "nonexistent")
+	if err == nil {
+		t.Error("expected error when source not found")
+	}
+}
+
+func TestRunIngestResolvePathError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// Use a relative source path so resolvePath calls osGetwd.
+	yaml := "llm_provider: anthropic\nembed_provider: ollama\nsources:\n  - name: docs\n    path: relative/path\n    type: filesystem\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	orig := osGetwd
+	osGetwd = func() (string, error) { return "", fmt.Errorf("forced getwd error") }
+	defer func() { osGetwd = orig }()
+	err := runIngest(context.Background(), "docs")
+	if err == nil {
+		t.Error("expected error when resolvePath fails inside runIngest")
+	}
+}
+
+func TestRunIngestFssourceNewError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// Source path is absolute and nonexistent — fssource.New should fail.
+	yaml := "llm_provider: anthropic\nembed_provider: ollama\nsources:\n  - name: docs\n    path: /nonexistent/path/xyz\n    type: filesystem\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := runIngest(context.Background(), "docs")
+	if err == nil {
+		t.Error("expected error when source root does not exist")
+	}
+}
+
+func TestRunIngestEmbedderError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("GEMINI_API_KEY", "")
+	srcDir := filepath.Join(tmp, "src")
+	if err := os.MkdirAll(srcDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := fmt.Sprintf("llm_provider: anthropic\nembed_provider: gemini\ngemini_api_key: \"\"\nsources:\n  - name: docs\n    path: %s\n    type: filesystem\n", srcDir)
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := runIngest(context.Background(), "docs")
+	if err == nil {
+		t.Error("expected error when gemini embed key missing")
+	}
+}
+
+func TestRunIngestResolveDBPathError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	srcDir := filepath.Join(tmp, "src")
+	if err := os.MkdirAll(srcDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := fmt.Sprintf("llm_provider: anthropic\nembed_provider: ollama\ndb_path: /dev/null/sub/hatch.db\nsources:\n  - name: docs\n    path: %s\n    type: filesystem\n", srcDir)
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := runIngest(context.Background(), "docs")
+	if err == nil {
+		t.Error("expected error for bad db path")
+	}
+}
+
+func TestRunIngestSQLiteOpenError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	srcDir := filepath.Join(tmp, "src")
+	if err := os.MkdirAll(srcDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// Create a directory where the db file should be so sqlite.Open fails.
+	dbPath := filepath.Join(hatchDir, "hatch.db")
+	if err := os.MkdirAll(dbPath, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := fmt.Sprintf(ollamaIngestYAML, srcDir)
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	orig, set := os.LookupEnv(envHatchDBPath)
+	os.Unsetenv(envHatchDBPath)
+	if set {
+		defer os.Setenv(envHatchDBPath, orig)
+	} else {
+		defer os.Unsetenv(envHatchDBPath)
+	}
+	err := runIngest(context.Background(), "docs")
+	if err == nil {
+		t.Error("expected error when db path is a directory")
+	}
+}
+
+func TestRunIngestPipelineError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	srcDir := filepath.Join(tmp, "src")
+	if err := os.MkdirAll(srcDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := fmt.Sprintf(ollamaIngestYAML, srcDir)
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	orig, set := os.LookupEnv(envHatchDBPath)
+	os.Unsetenv(envHatchDBPath)
+	if set {
+		defer os.Setenv(envHatchDBPath, orig)
+	} else {
+		defer os.Unsetenv(envHatchDBPath)
+	}
+	origRun := pipelineRun
+	pipelineRun = func(ctx context.Context, src source.Fetcher, chk chunker.Chunker, emb embedder.Embedder, st store.VecStore, ch chan<- pipeline.Progress) error {
+		return fmt.Errorf("forced pipeline error")
+	}
+	defer func() { pipelineRun = origRun }()
+	err := runIngest(context.Background(), "docs")
+	if err == nil {
+		t.Error("expected error from pipeline")
+	}
+}
+
+func TestRunIngestSuccess(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	srcDir := filepath.Join(tmp, "src")
+	if err := os.MkdirAll(srcDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	hatchDir := filepath.Join(tmp, hatchDirName)
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := fmt.Sprintf(ollamaIngestYAML, srcDir)
+	if err := os.WriteFile(filepath.Join(hatchDir, hatchConfigFile), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	orig, set := os.LookupEnv(envHatchDBPath)
+	os.Unsetenv(envHatchDBPath)
+	if set {
+		defer os.Setenv(envHatchDBPath, orig)
+	} else {
+		defer os.Unsetenv(envHatchDBPath)
+	}
+	origRun := pipelineRun
+	pipelineRun = func(ctx context.Context, src source.Fetcher, chk chunker.Chunker, emb embedder.Embedder, st store.VecStore, ch chan<- pipeline.Progress) error {
+		return nil
+	}
+	defer func() { pipelineRun = origRun }()
+	err := runIngest(context.Background(), "docs")
+	if err != nil {
+		t.Errorf("runIngest: %v", err)
 	}
 }

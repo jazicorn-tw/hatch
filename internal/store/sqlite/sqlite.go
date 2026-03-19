@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/binary"
 	"fmt"
+	"io/fs"
 	"math"
 
 	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo" // registers sqlite-vec with go-sqlite3
@@ -21,6 +22,24 @@ func init() {
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
+
+// Injectable vars for testing error paths.
+var (
+	readMigrationsDir   = func() ([]fs.DirEntry, error) { return migrationsFS.ReadDir("migrations") }
+	readMigrationFileFn = func(version string) ([]byte, error) {
+		return migrationsFS.ReadFile("migrations/" + version)
+	}
+	migrateStoreFn     = func(s *Store) error { return s.migrate() }
+	prepareVecDeleteFn = func(ctx context.Context, tx *sql.Tx) (*sql.Stmt, error) {
+		return tx.PrepareContext(ctx, `DELETE FROM vec_chunks WHERE chunk_id = ?`)
+	}
+	prepareVecInsertFn = func(ctx context.Context, tx *sql.Tx) (*sql.Stmt, error) {
+		return tx.PrepareContext(ctx, `INSERT INTO vec_chunks (chunk_id, embedding) VALUES (?, ?)`)
+	}
+)
+
+// prepareUpsertStmtsFn is injectable so tests can simulate prepare failures inside Upsert.
+var prepareUpsertStmtsFn = prepareUpsertStmts
 
 // float32Size is the byte width of a single float32 value.
 const float32Size = 4
@@ -41,7 +60,7 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("sqlite: ping: %w", err)
 	}
 	s := &Store{db: db}
-	if err := s.migrate(); err != nil {
+	if err := migrateStoreFn(s); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -69,7 +88,7 @@ func (s *Store) ensureMigrationsTable() error {
 
 // runMigrations applies all *.sql files in migrations/ not yet recorded.
 func (s *Store) runMigrations() error {
-	entries, err := migrationsFS.ReadDir("migrations")
+	entries, err := readMigrationsDir()
 	if err != nil {
 		return fmt.Errorf("sqlite: read migrations dir: %w", err)
 	}
@@ -95,7 +114,7 @@ func (s *Store) applyMigration(version string) error {
 	if count > 0 {
 		return nil
 	}
-	sqlBytes, err := migrationsFS.ReadFile("migrations/" + version)
+	sqlBytes, err := readMigrationFileFn(version)
 	if err != nil {
 		return fmt.Errorf("sqlite: read migration %s: %w", version, err)
 	}
@@ -133,14 +152,12 @@ func prepareUpsertStmts(ctx context.Context, tx *sql.Tx) (*upsertStmts, error) {
 		return nil, fmt.Errorf("sqlite: prepare chunk insert: %w", err)
 	}
 	// vec0 virtual tables do not support INSERT OR REPLACE; use DELETE then INSERT.
-	vecDelete, err := tx.PrepareContext(ctx,
-		`DELETE FROM vec_chunks WHERE chunk_id = ?`)
+	vecDelete, err := prepareVecDeleteFn(ctx, tx)
 	if err != nil {
 		chunk.Close()
 		return nil, fmt.Errorf("sqlite: prepare vec delete: %w", err)
 	}
-	vecInsert, err := tx.PrepareContext(ctx,
-		`INSERT INTO vec_chunks (chunk_id, embedding) VALUES (?, ?)`)
+	vecInsert, err := prepareVecInsertFn(ctx, tx)
 	if err != nil {
 		chunk.Close()
 		vecDelete.Close()
@@ -181,7 +198,7 @@ func (s *Store) Upsert(ctx context.Context, records []store.Record) error {
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	stmts, err := prepareUpsertStmts(ctx, tx)
+	stmts, err := prepareUpsertStmtsFn(ctx, tx)
 	if err != nil {
 		return err
 	}

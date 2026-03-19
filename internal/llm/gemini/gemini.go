@@ -11,6 +11,17 @@ import (
 
 const defaultModel = "gemini-2.0-flash"
 
+// generator is the minimal interface needed to call GenerateContent.
+type generator interface {
+	GenerateContent(ctx context.Context, parts ...genai.Part) (*genai.GenerateContentResponse, error)
+}
+
+// genaiNewClient is the function used to create a genai.Client; it can be
+// overridden in tests to inject errors.
+var genaiNewClient = func(ctx context.Context, opts ...option.ClientOption) (*genai.Client, error) {
+	return genai.NewClient(ctx, opts...)
+}
+
 // Config holds Google Generative AI API parameters for the LLM.
 type Config struct {
 	// APIKey is the Google API key. Required.
@@ -23,6 +34,7 @@ type Config struct {
 type LLM struct {
 	cfg    Config
 	client *genai.Client
+	model  generator
 }
 
 // New returns a configured Gemini LLM.
@@ -34,18 +46,17 @@ func New(cfg Config) (*LLM, error) {
 	if cfg.Model == "" {
 		cfg.Model = defaultModel
 	}
-	client, err := genai.NewClient(context.Background(), option.WithAPIKey(cfg.APIKey))
+	client, err := genaiNewClient(context.Background(), option.WithAPIKey(cfg.APIKey))
 	if err != nil {
 		return nil, fmt.Errorf("gemini llm: create client: %w", err)
 	}
-	return &LLM{cfg: cfg, client: client}, nil
+	return &LLM{cfg: cfg, client: client, model: client.GenerativeModel(cfg.Model)}, nil
 }
 
 // Complete implements llm.Completer.
 // It sends prompt as a single user message and returns the model's text reply.
 func (l *LLM) Complete(ctx context.Context, prompt string) (string, error) {
-	model := l.client.GenerativeModel(l.cfg.Model)
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	resp, err := l.model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
 		return "", fmt.Errorf("gemini llm: generate: %w", err)
 	}

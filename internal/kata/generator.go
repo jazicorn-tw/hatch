@@ -18,6 +18,9 @@ import (
 //go:embed prompt/*.tmpl
 var promptFS embed.FS
 
+// readTemplateFile is a var so tests can override it to inject errors.
+var readTemplateFile = func(name string) ([]byte, error) { return promptFS.ReadFile(name) }
+
 // Generator creates katas from a topic by:
 //  1. Embedding the topic to a search vector
 //  2. Retrieving top-k relevant chunks from the store
@@ -104,7 +107,7 @@ func (g *Generator) Generate(ctx context.Context, topic string) (*Kata, error) {
 
 // buildPrompt renders kata_generate.tmpl with topic and chunks.
 func (g *Generator) buildPrompt(topic string, records []store.Record) (string, error) {
-	tmplBytes, err := promptFS.ReadFile("prompt/kata_generate.tmpl")
+	tmplBytes, err := readTemplateFile("prompt/kata_generate.tmpl")
 	if err != nil {
 		return "", fmt.Errorf("read template: %w", err)
 	}

@@ -23,6 +23,11 @@ type Config struct {
 	SourceName string
 }
 
+// filepathRel and osOpenFile are vars so internal tests can inject errors
+// for the filepath.Rel and file-open/read code paths.
+var filepathRel = filepath.Rel
+var osOpenFile = func(name string) (io.ReadSeekCloser, error) { return os.Open(name) }
+
 // Fetcher walks a directory tree and emits one Document per text file,
 // respecting any .gitignore files found in the tree.
 type Fetcher struct {
@@ -78,7 +83,7 @@ func (f *Fetcher) walkEntry(ctx context.Context, docs *[]source.Document, path s
 		return nil
 	}
 
-	rel, err := filepath.Rel(f.cfg.Root, path)
+	rel, err := filepathRel(f.cfg.Root, path)
 	if err != nil {
 		return fmt.Errorf("fs: rel path for %s: %w", path, err)
 	}
@@ -118,7 +123,7 @@ func (f *Fetcher) walkEntry(ctx context.Context, docs *[]source.Document, path s
 // Returns an error if the file is binary (contains a null byte in the first
 // 512 bytes) or cannot be read.
 func readTextFile(path string) (string, error) {
-	f, err := os.Open(path)
+	f, err := osOpenFile(path)
 	if err != nil {
 		return "", err
 	}

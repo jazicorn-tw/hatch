@@ -9,6 +9,161 @@ import (
 )
 
 // ---------------------------------------------------------------------------
+// setupDeps
+// ---------------------------------------------------------------------------
+
+func TestSetupDepsConfigLoadError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	orig, set := os.LookupEnv("HATCH_DB_PATH")
+	os.Unsetenv("HATCH_DB_PATH")
+	if set {
+		defer os.Setenv("HATCH_DB_PATH", orig)
+	} else {
+		defer os.Unsetenv("HATCH_DB_PATH")
+	}
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte("key: [unclosed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := setupDeps()
+	if err == nil {
+		t.Error("expected error for malformed config")
+	}
+}
+
+func TestSetupDepsEmbedderError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("GEMINI_API_KEY", "")
+	orig, set := os.LookupEnv("HATCH_DB_PATH")
+	os.Unsetenv("HATCH_DB_PATH")
+	if set {
+		defer os.Setenv("HATCH_DB_PATH", orig)
+	} else {
+		defer os.Unsetenv("HATCH_DB_PATH")
+	}
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := "llm_provider: anthropic\nanthropic_api_key: test-key\nembed_provider: gemini\ngemini_api_key: \"\"\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := setupDeps()
+	if err == nil {
+		t.Error("expected error when gemini embed key missing")
+	}
+}
+
+func TestSetupDepsLLMError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("GEMINI_API_KEY", "")
+	orig, set := os.LookupEnv("HATCH_DB_PATH")
+	os.Unsetenv("HATCH_DB_PATH")
+	if set {
+		defer os.Setenv("HATCH_DB_PATH", orig)
+	} else {
+		defer os.Unsetenv("HATCH_DB_PATH")
+	}
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := "llm_provider: gemini\ngemini_api_key: \"\"\nembed_provider: ollama\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := setupDeps()
+	if err == nil {
+		t.Error("expected error when gemini llm key missing")
+	}
+}
+
+func TestSetupDepsResolveDBPathError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	orig, set := os.LookupEnv("HATCH_DB_PATH")
+	os.Unsetenv("HATCH_DB_PATH")
+	if set {
+		defer os.Setenv("HATCH_DB_PATH", orig)
+	} else {
+		defer os.Unsetenv("HATCH_DB_PATH")
+	}
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := "llm_provider: anthropic\nanthropic_api_key: test-key\nembed_provider: ollama\ndb_path: /dev/null/sub/hatch.db\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := setupDeps()
+	if err == nil {
+		t.Error("expected error for bad db path")
+	}
+}
+
+func TestSetupDepsOpenStoreError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	orig, set := os.LookupEnv("HATCH_DB_PATH")
+	os.Unsetenv("HATCH_DB_PATH")
+	if set {
+		defer os.Setenv("HATCH_DB_PATH", orig)
+	} else {
+		defer os.Unsetenv("HATCH_DB_PATH")
+	}
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// Create a directory where the db file would go so sqlite.Open fails.
+	dbDir := filepath.Join(hatchDir, "hatch.db")
+	if err := os.MkdirAll(dbDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := "llm_provider: anthropic\nanthropic_api_key: test-key\nembed_provider: ollama\ndb_path: \"\"\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := setupDeps()
+	if err == nil {
+		t.Error("expected error when db path is a directory")
+	}
+}
+
+func TestSetupDepsSuccess(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	orig, set := os.LookupEnv("HATCH_DB_PATH")
+	os.Unsetenv("HATCH_DB_PATH")
+	if set {
+		defer os.Setenv("HATCH_DB_PATH", orig)
+	} else {
+		defer os.Unsetenv("HATCH_DB_PATH")
+	}
+	hatchDir := filepath.Join(tmp, ".hatch")
+	if err := os.MkdirAll(hatchDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	yaml := "llm_provider: anthropic\nanthropic_api_key: test-key\nembed_provider: ollama\ndb_path: \"\"\n"
+	if err := os.WriteFile(filepath.Join(hatchDir, "config.yaml"), []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	d, err := setupDeps()
+	if err != nil {
+		t.Fatalf("setupDeps: %v", err)
+	}
+	d.store.Close()
+}
+
+// ---------------------------------------------------------------------------
 // newLLMCompleter
 // ---------------------------------------------------------------------------
 

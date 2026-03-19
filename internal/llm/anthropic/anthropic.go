@@ -17,6 +17,13 @@ const (
 	apiVersion       = "2023-06-01"
 )
 
+// apiEndpoint and jsonMarshal are package-level vars so tests can override
+// them to trigger error branches that are otherwise unreachable.
+var (
+	apiEndpoint = apiURL
+	jsonMarshal = json.Marshal
+)
+
 // Config holds Anthropic API parameters.
 type Config struct {
 	// APIKey is the Anthropic API key. Required.
@@ -77,12 +84,12 @@ func (l *LLM) Complete(ctx context.Context, prompt string) (string, error) {
 		MaxTokens: l.cfg.MaxTokens,
 		Messages:  []apiMessage{{Role: "user", Content: prompt}},
 	}
-	data, err := json.Marshal(payload)
+	data, err := jsonMarshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("anthropic: marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiEndpoint, bytes.NewReader(data))
 	if err != nil {
 		return "", fmt.Errorf("anthropic: create request: %w", err)
 	}

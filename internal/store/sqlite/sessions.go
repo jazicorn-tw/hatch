@@ -9,6 +9,9 @@ import (
 	"github.com/jazicorn/hatch/internal/quiz"
 )
 
+// marshalSessionOptions is injectable so tests can simulate json.Marshal failures.
+var marshalSessionOptions = json.Marshal
+
 // SaveSession persists a completed Session and all its questions to SQLite.
 func (s *Store) SaveSession(ctx context.Context, sess *quiz.Session) error {
 	correct, total := sess.Score()
@@ -33,7 +36,7 @@ func (s *Store) SaveSession(ctx context.Context, sess *quiz.Session) error {
 	}
 
 	for i, q := range sess.Questions {
-		optsJSON, err := json.Marshal(q.Options)
+		optsJSON, err := marshalSessionOptions(q.Options)
 		if err != nil {
 			return fmt.Errorf("sqlite: marshal options for question %s: %w", q.ID, err)
 		}
