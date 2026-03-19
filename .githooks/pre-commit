@@ -7,6 +7,7 @@ set -euo pipefail
 # Runs on ALL branches:
 #   1. ./dev format  (auto-format Go source)
 #   2. ./dev lint    (go vet + markdownlint)
+#   3. staticcheck   (extended static analysis)
 #
 # Overrides (one-off per commit):
 #   SKIP_QUALITY=1    git commit ...   -> skip this hook entirely
@@ -78,4 +79,12 @@ fi
 # --- Lint ---
 log "pre-commit: linting (./dev lint)..."
 ./dev lint || fail "lint (./dev lint)" $?
+
+# --- Staticcheck ---
+if ! command -v staticcheck >/dev/null 2>&1; then
+  log "pre-commit: staticcheck not found; installing (one-time)..."
+  go install honnef.co/go/tools/cmd/staticcheck@latest || fail "staticcheck install" $?
+fi
+log "pre-commit: running staticcheck..."
+staticcheck ./... || fail "staticcheck" $?
 
