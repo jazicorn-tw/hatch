@@ -15,7 +15,7 @@ import (
 )
 
 // errorOnReadFile implements io.ReadSeekCloser but errors on first Read.
-type errorOnReadFile struct{ pos int }
+type errorOnReadFile struct{}
 
 func (f *errorOnReadFile) Read(_ []byte) (int, error)         { return 0, fmt.Errorf("read error") }
 func (f *errorOnReadFile) Seek(_ int64, _ int) (int64, error) { return 0, nil }
