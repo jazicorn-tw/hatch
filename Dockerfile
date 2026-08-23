@@ -13,7 +13,7 @@ FROM --platform=$BUILDPLATFORM tonistiigi/xx@sha256:c64defb9ed5a91eacb37f96ccc3d
 # -tags "netgo osusergo"  replaces glibc DNS and user-lookup with pure-Go
 #                         implementations — required for fully static glibc binaries.
 # -extldflags="-static"   statically links C deps (sqlite3, sqlite-vec).
-FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27-bookworm AS builder
 
 # Copy xx helpers into the builder.
 # COPY --from=xx / / is the canonical pattern — xx is built FROM scratch and
